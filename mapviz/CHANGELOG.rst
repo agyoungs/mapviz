@@ -2,6 +2,9 @@
 Changelog for package mapviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 2.4.3 (2024-09-18)
 ------------------
 * update launch params (`#830 <https://github.com/swri-robotics/mapviz/issues/830>`_)

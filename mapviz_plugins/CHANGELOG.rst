@@ -2,6 +2,11 @@
 Changelog for package mapviz_plugins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add service support for select topic ui (`#832 <https://github.com/swri-robotics/mapviz/issues/832>`_)
+* Contributors: nick-alton
+
 2.4.3 (2024-09-18)
 ------------------
 * update plugin subscribers to use all of qos (`#827 <https://github.com/swri-robotics/mapviz/issues/827>`_)
