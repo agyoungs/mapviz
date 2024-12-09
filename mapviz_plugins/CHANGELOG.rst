@@ -2,8 +2,8 @@
 Changelog for package mapviz_plugins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.4.4 (2024-12-09)
+------------------
 * Add service support for select topic ui (`#832 <https://github.com/swri-robotics/mapviz/issues/832>`_)
 * Contributors: nick-alton
 
