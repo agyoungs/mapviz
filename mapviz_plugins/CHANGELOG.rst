@@ -2,6 +2,12 @@
 Changelog for package mapviz_plugins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix topic lists (`#833 <https://github.com/swri-robotics/mapviz/issues/833>`_)
+  Fixed problems with topic list display.
+* Contributors: nick-alton
+
 2.4.4 (2024-12-09)
 ------------------
 * Add service support for select topic ui (`#832 <https://github.com/swri-robotics/mapviz/issues/832>`_)
