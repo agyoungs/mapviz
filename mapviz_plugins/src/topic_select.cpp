@@ -341,11 +341,14 @@ void SelectTopicDialog::updateDisplayedTopics()
   // it allows Qt to properly track the selection and current items
   // across updates, which results in much less frustration for the user.
 
+  displayed_topics_.clear();
   std::set<std::string> prev_names;
-  for (const auto & displayed_topic : displayed_topics_) {
-    prev_names.insert(displayed_topic);
-  }
 
+  for (int i = 0; i < ui_->topicList->count(); i++)
+  {
+    prev_names.insert(ui_->topicList->item(i)->text().toStdString());
+    displayed_topics_.push_back(ui_->topicList->item(i)->text().toStdString());
+  }
   std::set<std::string> next_names;
   for (const auto & next_displayed_topic : next_displayed_topics) {
     next_names.insert(next_displayed_topic);
