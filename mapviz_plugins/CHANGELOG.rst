@@ -2,8 +2,8 @@
 Changelog for package mapviz_plugins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.4.5 (2025-01-20)
+------------------
 * Fix topic lists (`#833 <https://github.com/swri-robotics/mapviz/issues/833>`_)
   Fixed problems with topic list display.
 * Contributors: nick-alton
