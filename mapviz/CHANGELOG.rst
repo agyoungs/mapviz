@@ -2,6 +2,12 @@
 Changelog for package mapviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fixed textured_marker_plugin subscriptions. Added some additional error handling to mapviz plugin loading to avoid early exits. (`#836 <https://github.com/swri-robotics/mapviz/issues/836>`_)
+  Co-authored-by: Robert Brothers <robert.j.brothers21.ctr@army.mil>
+* Contributors: Robert Brothers
+
 2.4.5 (2025-01-20)
 ------------------
 
