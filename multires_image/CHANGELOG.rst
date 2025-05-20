@@ -2,6 +2,9 @@
 Changelog for package multires_image
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 2.4.8 (2025-05-20)
 ------------------
 * Fixing various dependencies (`#839 <https://github.com/swri-robotics/mapviz/issues/839>`_)
