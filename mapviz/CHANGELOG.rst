@@ -2,6 +2,11 @@
 Changelog for package mapviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fixing various dependencies (`#839 <https://github.com/swri-robotics/mapviz/issues/839>`_)
+* Contributors: David Anthony
+
 2.4.7 (2025-05-20)
 ------------------
 * [kilted] Update deprecated call to ament_target_dependencies (`#838 <https://github.com/swri-robotics/mapviz/issues/838>`_)
