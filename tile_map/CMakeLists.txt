@@ -84,15 +84,6 @@ target_include_directories(${PROJECT_NAME} SYSTEM
     GLEW::GLEW
     ${JSONCPP_INCLUDE_DIRS}
     ${YamlCpp_INCLUDE_DIRS})
-ament_target_dependencies(${PROJECT_NAME}
-  ament_cmake
-  mapviz
-  pluginlib
-  rclcpp
-  swri_math_util
-  swri_transform_util
-  tf2
-)
 target_link_libraries(${PROJECT_NAME}
   ${GLU_LIBRARY}
   ${JSONCPP_LIBRARIES}
@@ -102,6 +93,10 @@ target_link_libraries(${PROJECT_NAME}
   Qt5::Gui
   Qt5::OpenGL
   Qt5::Widgets
+PUBLIC
+  pluginlib::pluginlib
+  rclcpp::rclcpp
+  tf2::tf2
 )
 
 set(PLUGIN_SRC_FILES
