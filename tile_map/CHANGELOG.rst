@@ -2,8 +2,8 @@
 Changelog for package tile_map
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.4.9 (2025-05-20)
+------------------
 * Adding Mapviz to tile map include directories (`#840 <https://github.com/swri-robotics/mapviz/issues/840>`_)
 * Contributors: David Anthony
 
