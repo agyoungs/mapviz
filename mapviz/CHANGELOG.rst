@@ -2,6 +2,12 @@
 Changelog for package mapviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [kilted] Update deprecated call to ament_target_dependencies (`#838 <https://github.com/swri-robotics/mapviz/issues/838>`_)
+  * Removing deprecated ament calls while building.
+* Contributors: David V. Lu!!
+
 2.4.6 (2025-04-02)
 ------------------
 * Fixed textured_marker_plugin subscriptions. Added some additional error handling to mapviz plugin loading to avoid early exits. (`#836 <https://github.com/swri-robotics/mapviz/issues/836>`_)

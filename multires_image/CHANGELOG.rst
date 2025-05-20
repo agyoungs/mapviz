@@ -2,6 +2,12 @@
 Changelog for package multires_image
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* [kilted] Update deprecated call to ament_target_dependencies (`#838 <https://github.com/swri-robotics/mapviz/issues/838>`_)
+  * Removing deprecated ament calls while building.
+* Contributors: David V. Lu!!
+
 2.4.6 (2025-04-02)
 ------------------
 
