@@ -2,8 +2,8 @@
 Changelog for package tile_map
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.4.7 (2025-05-20)
+------------------
 * [kilted] Update deprecated call to ament_target_dependencies (`#838 <https://github.com/swri-robotics/mapviz/issues/838>`_)
   * Removing deprecated ament calls while building.
 * Contributors: David V. Lu!!
