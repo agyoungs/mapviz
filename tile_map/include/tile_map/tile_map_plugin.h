@@ -31,12 +31,9 @@
 #define TILE_MAP_TILE_MAP_PLUGIN_H_
 
 // C++ standard libraries
+#include <filesystem>
 #include <string>
 #include <map>
-
-// Boost libraries
-#include <boost/filesystem.hpp>
-#include <boost/algorithm/string/trim.hpp>
 
 #include <mapviz/mapviz_plugin.h>
 

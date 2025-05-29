@@ -32,8 +32,6 @@
 #include <tile_map/bing_source.h>
 #include <tile_map/wmts_source.h>
 
-#include <boost/algorithm/string/trim.hpp>
-
 #include <tile_map/tile_source.h>
 #include <tile_map/bing_source.h>
 #include <tile_map/wmts_source.h>
@@ -420,12 +418,15 @@ namespace tile_map
     }
     emitter << YAML::EndSeq;
 
+    
     BingSource* bing_source = dynamic_cast<BingSource*>(tile_sources_[BING_NAME].get());
-    emitter << YAML::Key << BING_API_KEY <<
-               YAML::Value << boost::trim_copy(bing_source->GetApiKey().toStdString());
+    std::string bing_key = bing_source->GetApiKey().toStdString();
+    bing_key.erase(std::remove_if(bing_key.begin(), bing_key.end(), ::isspace), bing_key.end());
+    emitter << YAML::Key << BING_API_KEY << YAML::Value << bing_key;
 
-    emitter << YAML::Key << SOURCE_KEY <<
-               YAML::Value << boost::trim_copy(ui_.source_combo->currentText().toStdString());
+    std::string combo_str = ui_.source_combo->currentText().toStdString();
+    combo_str.erase(std::remove_if(combo_str.begin(), combo_str.end(), ::isspace), combo_str.end());
+    emitter << YAML::Key << SOURCE_KEY << YAML::Value << combo_str; 
   }
 
   void TileMapPlugin::selectTileSource(const std::shared_ptr<TileSource>& tile_source)
