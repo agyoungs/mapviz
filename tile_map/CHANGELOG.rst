@@ -2,6 +2,16 @@
 Changelog for package tile_map
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Correct CMake Export (`#842 <https://github.com/swri-robotics/mapviz/issues/842>`_)
+  * Removes Boost
+  * Removes deprecated ament macro
+  * General fixes to fix CMake exports and dependencies
+  ---------
+  Co-authored-by: Ben Andrew <benjamin.andrew@swri.org>
+* Contributors: David Anthony
+
 2.4.9 (2025-05-20)
 ------------------
 * Adding Mapviz to tile map include directories (`#840 <https://github.com/swri-robotics/mapviz/issues/840>`_)
