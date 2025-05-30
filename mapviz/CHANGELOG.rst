@@ -2,6 +2,11 @@
 Changelog for package mapviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix missing trailing slash in cmake include install (`#843 <https://github.com/swri-robotics/mapviz/issues/843>`_)
+* Contributors: DangitBen
+
 2.5.0 (2025-05-29)
 ------------------
 * Correct CMake Export (`#842 <https://github.com/swri-robotics/mapviz/issues/842>`_)
