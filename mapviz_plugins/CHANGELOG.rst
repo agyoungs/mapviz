@@ -2,8 +2,8 @@
 Changelog for package mapviz_plugins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.5.2 (2025-05-31)
+------------------
 * Add missing deps and remove ROS1-exclusive one (`#844 <https://github.com/swri-robotics/mapviz/issues/844>`_)
 * Contributors: Veronica Knisley
 
