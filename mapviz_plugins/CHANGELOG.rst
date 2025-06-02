@@ -2,6 +2,11 @@
 Changelog for package mapviz_plugins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Dependency cleanup (`#845 <https://github.com/swri-robotics/mapviz/issues/845>`_)
+* Contributors: DangitBen
+
 2.5.2 (2025-05-31)
 ------------------
 * Add missing deps and remove ROS1-exclusive one (`#844 <https://github.com/swri-robotics/mapviz/issues/844>`_)

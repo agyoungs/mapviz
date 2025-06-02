@@ -2,6 +2,11 @@
 Changelog for package tile_map
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Dependency cleanup (`#845 <https://github.com/swri-robotics/mapviz/issues/845>`_)
+* Contributors: DangitBen
+
 2.5.2 (2025-05-31)
 ------------------
 
