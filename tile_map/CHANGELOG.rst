@@ -2,6 +2,9 @@
 Changelog for package tile_map
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 2.5.3 (2025-06-02)
 ------------------
 * Dependency cleanup (`#845 <https://github.com/swri-robotics/mapviz/issues/845>`_)

@@ -2,6 +2,9 @@
 Changelog for package mapviz_interfaces
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 2.5.3 (2025-06-02)
 ------------------
 
