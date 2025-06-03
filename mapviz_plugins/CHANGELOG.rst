@@ -2,8 +2,8 @@
 Changelog for package mapviz_plugins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.5.4 (2025-06-03)
+------------------
 * Add Missing Qt Dependencies to Export List (`#847 <https://github.com/swri-robotics/mapviz/issues/847>`_)
 * Contributors: DangitBen
 
