@@ -2,6 +2,11 @@
 Changelog for package mapviz_plugins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Updating headers with new names (`#848 <https://github.com/swri-robotics/mapviz/issues/848>`_)
+* Contributors: David Anthony
+
 2.5.4 (2025-06-03)
 ------------------
 * Add Missing Qt Dependencies to Export List (`#847 <https://github.com/swri-robotics/mapviz/issues/847>`_)
