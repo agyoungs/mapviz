@@ -2,8 +2,8 @@
 Changelog for package tile_map
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.5.5 (2025-06-03)
+------------------
 * Updating headers with new names (`#848 <https://github.com/swri-robotics/mapviz/issues/848>`_)
 * Contributors: David Anthony
 
