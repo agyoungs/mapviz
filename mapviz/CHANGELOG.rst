@@ -2,6 +2,11 @@
 Changelog for package mapviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Adding libopencv as a depdendency (`#849 <https://github.com/swri-robotics/mapviz/issues/849>`_)
+* Contributors: David Anthony
+
 2.5.5 (2025-06-03)
 ------------------
 * Updating headers with new names (`#848 <https://github.com/swri-robotics/mapviz/issues/848>`_)
