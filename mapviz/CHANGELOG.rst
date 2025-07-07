@@ -2,8 +2,8 @@
 Changelog for package mapviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.5.7 (2025-07-07)
+------------------
 * Switching recursive mutex for new API (`#853 <https://github.com/swri-robotics/mapviz/issues/853>`_)
 * Contributors: David Anthony
 
