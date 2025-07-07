@@ -2,6 +2,9 @@
 Changelog for package mapviz_plugins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 2.5.6 (2025-06-10)
 ------------------
 * Adding libopencv as a depdendency (`#849 <https://github.com/swri-robotics/mapviz/issues/849>`_)

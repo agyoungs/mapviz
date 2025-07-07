@@ -2,6 +2,11 @@
 Changelog for package mapviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Switching recursive mutex for new API (`#853 <https://github.com/swri-robotics/mapviz/issues/853>`_)
+* Contributors: David Anthony
+
 2.5.6 (2025-06-10)
 ------------------
 * Adding libopencv as a depdendency (`#849 <https://github.com/swri-robotics/mapviz/issues/849>`_)
