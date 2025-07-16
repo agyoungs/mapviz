@@ -2,8 +2,8 @@
 Changelog for package mapviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.5.8 (2025-07-16)
+------------------
 * Fixing misnamed library (`#854 <https://github.com/swri-robotics/mapviz/issues/854>`_)
 * Contributors: David Anthony
 
