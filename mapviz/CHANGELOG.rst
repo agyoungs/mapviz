@@ -2,6 +2,11 @@
 Changelog for package mapviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fixing misnamed library (`#854 <https://github.com/swri-robotics/mapviz/issues/854>`_)
+* Contributors: David Anthony
+
 2.5.7 (2025-07-07)
 ------------------
 * Switching recursive mutex for new API (`#853 <https://github.com/swri-robotics/mapviz/issues/853>`_)
