@@ -2,8 +2,8 @@
 Changelog for package mapviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.5.9 (2025-08-27)
+------------------
 * Improve whitespace trimming behavior (`#859 <https://github.com/swri-robotics/mapviz/issues/859>`_)
   moved MapvizPlugin::TrimString to protected from private
   make plugins use TrimString instead of remove_if with std::isspace

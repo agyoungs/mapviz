@@ -2,8 +2,8 @@
 Changelog for package tile_map
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.5.9 (2025-08-27)
+------------------
 * Removing unused function (`#861 <https://github.com/swri-robotics/mapviz/issues/861>`_)
 * Improve whitespace trimming behavior (`#859 <https://github.com/swri-robotics/mapviz/issues/859>`_)
   moved MapvizPlugin::TrimString to protected from private
