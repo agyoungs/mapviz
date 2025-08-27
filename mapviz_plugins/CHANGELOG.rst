@@ -2,6 +2,20 @@
 Changelog for package mapviz_plugins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Add error status for navsatfix uninitialized origin (`#860 <https://github.com/swri-robotics/mapviz/issues/860>`_)
+  * add error status for navsatfix uninitialized origin
+  * add hint in documentation
+  ---------
+  Co-authored-by: Ben Andrew <benjamin.andrew@swri.org>
+  Co-authored-by: David Anthony <djanthony@gmail.com>
+* Improve whitespace trimming behavior (`#859 <https://github.com/swri-robotics/mapviz/issues/859>`_)
+  moved MapvizPlugin::TrimString to protected from private
+  make plugins use TrimString instead of remove_if with std::isspace
+  Co-authored-by: Ben Andrew <benjamin.andrew@swri.org>
+* Contributors: DangitBen
+
 2.5.8 (2025-07-16)
 ------------------
 

@@ -2,6 +2,15 @@
 Changelog for package tile_map
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Removing unused function (`#861 <https://github.com/swri-robotics/mapviz/issues/861>`_)
+* Improve whitespace trimming behavior (`#859 <https://github.com/swri-robotics/mapviz/issues/859>`_)
+  moved MapvizPlugin::TrimString to protected from private
+  make plugins use TrimString instead of remove_if with std::isspace
+  Co-authored-by: Ben Andrew <benjamin.andrew@swri.org>
+* Contributors: DangitBen, David Anthony
+
 2.5.8 (2025-07-16)
 ------------------
 
