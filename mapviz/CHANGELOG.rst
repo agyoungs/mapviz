@@ -2,6 +2,13 @@
 Changelog for package mapviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix incorrect GLUT library reference (`#862 <https://github.com/swri-robotics/mapviz/issues/862>`_)
+  The documented variable here is GLUT_LIBRARIES, which is actually
+  already used correctly earlier in this file.
+* Contributors: Scott K Logan
+
 2.5.9 (2025-08-27)
 ------------------
 * Improve whitespace trimming behavior (`#859 <https://github.com/swri-robotics/mapviz/issues/859>`_)

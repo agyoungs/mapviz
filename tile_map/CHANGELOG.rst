@@ -2,6 +2,9 @@
 Changelog for package tile_map
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 2.5.9 (2025-08-27)
 ------------------
 * Removing unused function (`#861 <https://github.com/swri-robotics/mapviz/issues/861>`_)
