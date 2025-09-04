@@ -2,8 +2,8 @@
 Changelog for package mapviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.5.10 (2025-09-04)
+-------------------
 * Fix incorrect GLUT library reference (`#862 <https://github.com/swri-robotics/mapviz/issues/862>`_)
   The documented variable here is GLUT_LIBRARIES, which is actually
   already used correctly earlier in this file.
