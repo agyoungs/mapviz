@@ -2,6 +2,12 @@
 Changelog for package mapviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* HiDPI Scaling (`#863 <https://github.com/swri-robotics/mapviz/issues/863>`_)
+  Fixes issues related with HiDPI scaling.
+* Contributors: Logan Elliott
+
 2.5.10 (2025-09-04)
 -------------------
 * Fix incorrect GLUT library reference (`#862 <https://github.com/swri-robotics/mapviz/issues/862>`_)
