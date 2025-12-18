@@ -2,8 +2,8 @@
 Changelog for package tile_map
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+2.6.0 (2025-12-18)
+------------------
 * Added additional tilemap sources (`#864 <https://github.com/swri-robotics/mapviz/issues/864>`_)
   Co-authored-by: David Anthony <djanthony@gmail.com>
 * Contributors: Logan Elliott
