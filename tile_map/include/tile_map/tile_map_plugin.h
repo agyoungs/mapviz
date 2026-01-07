@@ -31,12 +31,9 @@
 #define TILE_MAP_TILE_MAP_PLUGIN_H_
 
 // C++ standard libraries
+#include <filesystem>
 #include <string>
 #include <map>
-
-// Boost libraries
-#include <boost/filesystem.hpp>
-#include <boost/algorithm/string/trim.hpp>
 
 #include <mapviz/mapviz_plugin.h>
 
@@ -111,15 +108,19 @@ namespace tile_map
 
     static std::string BASE_URL_KEY;
     static std::string BING_API_KEY;
+    static std::string STADIA_API_KEY;
     static std::string CUSTOM_SOURCES_KEY;
     static std::string MAX_ZOOM_KEY;
     static std::string NAME_KEY;
     static std::string SOURCE_KEY;
     static std::string TYPE_KEY;
     static QString BING_NAME;
+    static QString CARTO_NAME;
     static QString STAMEN_TERRAIN_NAME;
     static QString STAMEN_TONER_NAME;
     static QString STAMEN_WATERCOLOR_NAME;
+    static QString OSM_NAME;
+    static QString USGS_NAME;
   };
 }
 

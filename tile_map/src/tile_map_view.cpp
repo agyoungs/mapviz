@@ -1,6 +1,6 @@
 // *****************************************************************************
 //
-// Copyright (c) 2015, Southwest Research Institute® (SwRI®)
+// Copyright (c) 2015-2025, Southwest Research Institute® (SwRI®)
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,8 +30,6 @@
 #include <tile_map/tile_map_view.h>
 
 #include <cmath>
-
-#include <boost/make_shared.hpp>
 
 #include <GL/glew.h>
 #include <GL/gl.h>
@@ -77,6 +75,18 @@ namespace tile_map
   {
     tile_source_ = tile_source;
     level_ = -1;
+    // Clear existing tiles to avoid using stale textures from the old source
+    // which can cause segfaults when switching tile sources
+    for (auto & tile : tiles_)
+    {
+      tile_cache_->AddTexture(tile.texture);
+    }
+    tiles_.clear();
+    for (auto & tile : precache_)
+    {
+      tile_cache_->AddTexture(tile.texture);
+    }
+    precache_.clear();
   }
 
   void TileMapView::SetTransform(const swri_transform_util::Transform& transform)

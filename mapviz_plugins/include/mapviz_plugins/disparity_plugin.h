@@ -48,7 +48,7 @@
 #include <opencv2/highgui.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <stereo_msgs/msg/disparity_image.hpp>
-#include <tf2/transform_datatypes.h>
+#include <tf2/transform_datatypes.hpp>
 
 #include <mapviz/map_canvas.h>
 
@@ -111,10 +111,12 @@ protected Q_SLOTS:
   void SetSubscription(bool visible);
 
 private:
+  void connectCallback(const std::string& topic, const rmw_qos_profile_t& qos);
   Ui::disparity_config ui_;
   QWidget* config_widget_;
 
   std::string topic_;
+  rmw_qos_profile_t qos_;
   Anchor anchor_;
   Units units_;
   double offset_x_;

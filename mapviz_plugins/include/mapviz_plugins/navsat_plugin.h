@@ -31,7 +31,7 @@
 
 // ROS libraries
 #include <rclcpp/rclcpp.hpp>
-#include <tf2/transform_datatypes.h>
+#include <tf2/transform_datatypes.hpp>
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
 #include <swri_transform_util/local_xy_util.h>
 
@@ -77,10 +77,12 @@ class NavSatPlugin : public mapviz_plugins::PointDrawingPlugin
   QWidget* config_widget_;
 
   std::string topic_;
+  rmw_qos_profile_t qos_;
 
   rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr navsat_sub_;
   bool has_message_;
 
+  void connectCallback(const std::string& topic, const rmw_qos_profile_t& qos);
   void NavSatFixCallback(const sensor_msgs::msg::NavSatFix::ConstSharedPtr navsat);
 };
 }   // namespace mapviz_plugins

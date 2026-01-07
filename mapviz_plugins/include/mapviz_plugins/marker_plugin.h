@@ -37,15 +37,14 @@
 #include <QListWidgetItem>
 
 // ROS libraries
-#include <tf2/transform_datatypes.h>
+#include <tf2/transform_datatypes.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
-
-#include <boost/functional/hash.hpp>
 
 #include <mapviz/map_canvas.h>
 
 // C++ standard libraries
+#include <functional>
 #include <string>
 #include <utility>
 #include <unordered_map>
@@ -56,13 +55,22 @@
 
 namespace mapviz_plugins
 {
+
+template <class T>
+inline void hash_combine(std::size_t& seed, const T& v)
+{
+    constexpr int LARGE_PRIME = 0x9e3779b9;
+    std::hash<T> hasher;
+    seed ^= hasher(v) + LARGE_PRIME + (seed<<6) + (seed>>2);
+}
+
 using MarkerId = std::pair<std::string, int>;
 
 struct MarkerIdHash {
   std::size_t operator () (const MarkerId &p) const {
     std::size_t seed = 0;
-    boost::hash_combine(seed, p.first);
-    boost::hash_combine(seed, p.second);
+    hash_combine(seed, p.first);
+    hash_combine(seed, p.second);
     return seed;
   }
 };
@@ -70,7 +78,7 @@ struct MarkerIdHash {
 struct MarkerNsHash {
   std::size_t operator () (const std::string &p) const {
     std::size_t seed = 0;
-    boost::hash_combine(seed, p);
+    hash_combine(seed, p);
     return seed;
   }
 };
@@ -158,6 +166,7 @@ private:
   QWidget* config_widget_;
 
   std::string topic_;
+  rmw_qos_profile_t qos_;
 
   rclcpp::Subscription<visualization_msgs::msg::Marker>::SharedPtr marker_sub_;
   rclcpp::Subscription<visualization_msgs::msg::MarkerArray>::SharedPtr marker_array_sub_;
@@ -170,7 +179,7 @@ private:
   void handleMarker(visualization_msgs::msg::Marker::ConstSharedPtr marker);
   void handleMarkerArray(visualization_msgs::msg::MarkerArray::ConstSharedPtr markers);
   void processMarker(const visualization_msgs::msg::Marker& marker);
-  void subscribe();
+  void connectCallback(const std::string& topic, const rmw_qos_profile_t& qos);
   void transformArrow(MarkerData& markerData,
                       const swri_transform_util::Transform& transform);
 };

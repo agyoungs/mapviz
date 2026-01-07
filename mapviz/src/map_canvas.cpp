@@ -508,8 +508,7 @@ void MapCanvas::TransformTarget(QPainter* painter)
     auto tfrm = tf_buf_->lookupTransform(
       fixed_frame_,
       target_frame_,
-      tf2::TimePointZero,
-      std::chrono::seconds(1));
+      tf2::TimePointZero);
 
     tf2::fromMsg(tfrm, transform_);
 
@@ -593,7 +592,7 @@ void MapCanvas::UpdateView()
   if (initialized_) {
     Recenter();
 
-    glViewport(0, 0, width(), height());
+    glViewport(0, 0, width() * devicePixelRatio(), height() * devicePixelRatio());
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glOrtho(view_left_, view_right_, view_top_, view_bottom_, -0.5f, 0.5f);

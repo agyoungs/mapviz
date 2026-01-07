@@ -34,7 +34,7 @@
 #include <swri_transform_util/transform.h>
 #include <swri_transform_util/transform_manager.h>
 #include <rclcpp/rclcpp.hpp>
-#include <tf2/transform_datatypes.h>
+#include <tf2/transform_datatypes.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
@@ -318,7 +318,63 @@ protected:
     draw_order_(0)
   {}
 
-  private:
+  void LoadQosConfig(const YAML::Node& node, rmw_qos_profile_t& qos, const std::string prefix = "") const
+  {
+    if (node[prefix + "qos_depth"])
+    {
+      qos.depth = node[prefix + "qos_depth"].as<int>();
+    }
+
+    if (node[prefix + "qos_history"])
+    {
+      qos.history = static_cast<rmw_qos_history_policy_e>(node[prefix + "qos_history"].as<int>());
+    }
+
+    if (node[prefix + "qos_reliability"])
+    {
+      qos.reliability = static_cast<rmw_qos_reliability_policy_e>(node[prefix + "qos_reliability"].as<int>());
+    }
+
+    if (node[prefix + "qos_durability"])
+    {
+      qos.durability = static_cast<rmw_qos_durability_policy_e>(node[prefix + "qos_durability"].as<int>());
+    }
+  }
+
+  void SaveQosConfig(YAML::Emitter& emitter, const rmw_qos_profile_t& qos, const std::string prefix = "") const
+  {
+    emitter << YAML::Key << prefix + "qos_depth" << YAML::Value << qos.depth;
+    emitter << YAML::Key << prefix + "qos_history" << YAML::Value << qos.history;
+    emitter << YAML::Key << prefix + "qos_reliability" << YAML::Value << qos.reliability;
+    emitter << YAML::Key << prefix + "qos_durability" << YAML::Value << qos.durability;
+  }
+
+  // Dealing with YAML frequently requires trimming whitespace from strings
+  inline std::string TrimString(const std::string& str)
+  {
+    auto begin = str.begin();
+    auto end = str.end();
+
+    // Trim leading whitespace
+    while (begin != end && std::isspace(*begin))
+    {
+      ++begin;
+    }
+
+    // Trim trailing whitespace
+    if (begin != end)
+    {
+      do
+      {
+        --end;
+      } while (std::isspace(*end));
+      ++end;
+    }
+
+    return std::string(begin, end);
+  }
+
+private:
   // Collect basic profiling info to know how much time each plugin
   // spends in Transform(), Paint(), and Draw().
   Stopwatch meas_transform_;
@@ -328,7 +384,6 @@ protected:
 typedef std::shared_ptr<MapvizPlugin> MapvizPluginPtr;
 
 // Implementation
-
 inline void MapvizPlugin::PrintErrorHelper(QLabel *status_label, const std::string &message,
                                             double throttle)
 {

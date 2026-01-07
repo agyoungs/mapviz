@@ -6,7 +6,7 @@ if(${CMAKE_VERSION} VERSION_LESS 3.12)
 endif()
 
 if (NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 if(${CMAKE_VERSION} VERSION_EQUAL "3.11.0" OR ${CMAKE_VERSION} VERSION_GREATER "3.11.0")
@@ -22,30 +22,18 @@ project(multires_image
   LANGUAGES CXX)
 
 find_package(ament_cmake REQUIRED)
-find_package(cv_bridge REQUIRED)
-find_package(gps_msgs REQUIRED)
 find_package(mapviz REQUIRED)
 find_package(pluginlib REQUIRED)
+find_package(Qt5Core REQUIRED)
+find_package(Qt5Gui REQUIRED)
+find_package(Qt5OpenGL REQUIRED)
+find_package(Qt5Widgets REQUIRED)
 find_package(rclcpp  REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(swri_transform_util  REQUIRED)
 find_package(swri_math_util REQUIRED)
 
-### Boost ###
-find_package(Boost REQUIRED filesystem thread)
-
-### OpenGL ###
-find_package(OpenGL REQUIRED)
-
 ### OpenCV ###
-# multires_image doesn't directly use OpenCV, but it uses swri_transform_util, and
-# we need to include OpenCV to make one of its headers compile.
-find_package(OpenCV COMPONENTS core imgproc REQUIRED)
-
-find_package(Qt5Core REQUIRED)
-find_package(Qt5Gui REQUIRED)
-find_package(Qt5OpenGL REQUIRED)
-find_package(Qt5Widgets REQUIRED)
 add_definitions(-DWFlags=WindowFlags)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -60,29 +48,25 @@ set(TILE_SRC_FILES
 qt5_wrap_cpp(TILE_SRC_FILES include/${PROJECT_NAME}/tile_cache.h)
 
 add_library(${PROJECT_NAME} 
-  ${TILE_SRC_FILES}
-)
+  ${TILE_SRC_FILES})
+
 target_include_directories(${PROJECT_NAME}
   PUBLIC
-    include)
-target_link_libraries(${PROJECT_NAME}
-  ${Boost_LIBRARIES}
-  OpenGL::GL
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+)
+
+target_link_libraries(${PROJECT_NAME} PUBLIC
+  ${mapviz_TARGETS}
+  pluginlib::pluginlib
   Qt5::Core
   Qt5::Gui
   Qt5::OpenGL
   Qt5::Widgets
-)
-ament_target_dependencies(${PROJECT_NAME}
-  ament_cmake
-  cv_bridge
-  gps_msgs
-  mapviz
-  pluginlib
-  rclcpp 
-  tf2
-  swri_transform_util 
-  swri_math_util
+  rclcpp::rclcpp
+  ${swri_math_util_TARGETS}
+  ${swri_transform_util_TARGETS}
+  tf2::tf2
 )
 
 # Build libmultires_widget
@@ -100,7 +84,6 @@ add_library(multires_widget
 )
 target_link_libraries(multires_widget
   ${PROJECT_NAME}
-  OpenGL::GL
   Qt5::Core
   Qt5::Gui
   Qt5::OpenGL
@@ -111,15 +94,9 @@ target_link_libraries(multires_widget
 set(VIEW_NODE_SRC_FILES src/nodes/multires_view_node.cpp)
 qt5_wrap_cpp(VIEW_NODE_SRC_FILES include/${PROJECT_NAME}/multires_view_node.h)
 add_executable(multires_view_node ${VIEW_NODE_SRC_FILES})
-target_link_libraries(multires_view_node
+target_link_libraries(multires_view_node PUBLIC
   multires_widget
-  Boost::filesystem
-  Boost::thread
-)
-ament_target_dependencies(multires_view_node
-  ament_cmake
-  rclcpp
-  swri_transform_util
+  rclcpp::rclcpp
 )
 
 # Build mapviz plugin
@@ -132,22 +109,30 @@ qt5_wrap_cpp(MAPVIZ_SRC_FILES include/${PROJECT_NAME}/${PROJECT_NAME}_plugin.h)
 add_library(${PROJECT_NAME}_plugin SHARED
   ${MAPVIZ_SRC_FILES}
 )
-target_compile_definitions(${PROJECT_NAME}_plugin PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
-target_link_libraries(${PROJECT_NAME}_plugin
+
+target_link_libraries(${PROJECT_NAME}_plugin PUBLIC
   ${PROJECT_NAME}
+  multires_widget
+  ${mapviz_TARGETS}
 )
 
 ### Install ${PROJECT_NAME} plugin ###
-install(DIRECTORY include/${PROJECT_NAME}/
+install(DIRECTORY include/
   DESTINATION include/${PROJECT_NAME}
   FILES_MATCHING PATTERN "*.h"
 )
 
+# Install executables/nodes
+install(TARGETS multires_view_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+# Install and export libraries
 install(TARGETS ${PROJECT_NAME}
-  multires_view_node
   multires_widget
   ${PROJECT_NAME}_plugin
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
+  EXPORT export_${PROJECT_NAME}
+  RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
 )
@@ -163,7 +148,16 @@ install(DIRECTORY launch
 
 pluginlib_export_plugin_description_file(mapviz mapviz_plugins.xml)
 
-ament_export_dependencies(${RUNTIME_DEPS} Qt)
-ament_export_include_directories(include)
-ament_export_libraries(${PROJECT_NAME})
+ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
+ament_export_dependencies(Qt5Core
+  Qt5Gui
+  Qt5OpenGL
+  Qt5Widgets
+)
+ament_export_include_directories(
+  include/${PROJECT_NAME}
+)
+ament_export_libraries(
+  ${PROJECT_NAME}
+)
 ament_package()

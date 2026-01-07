@@ -2,6 +2,128 @@
 Changelog for package mapviz
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.6.0 (2025-12-18)
+------------------
+* HiDPI Scaling (`#863 <https://github.com/swri-robotics/mapviz/issues/863>`_)
+  Fixes issues related with HiDPI scaling.
+* Contributors: Logan Elliott
+
+2.5.10 (2025-09-04)
+-------------------
+* Fix incorrect GLUT library reference (`#862 <https://github.com/swri-robotics/mapviz/issues/862>`_)
+  The documented variable here is GLUT_LIBRARIES, which is actually
+  already used correctly earlier in this file.
+* Contributors: Scott K Logan
+
+2.5.9 (2025-08-27)
+------------------
+* Improve whitespace trimming behavior (`#859 <https://github.com/swri-robotics/mapviz/issues/859>`_)
+  moved MapvizPlugin::TrimString to protected from private
+  make plugins use TrimString instead of remove_if with std::isspace
+  Co-authored-by: Ben Andrew <benjamin.andrew@swri.org>
+* Contributors: DangitBen
+
+2.5.8 (2025-07-16)
+------------------
+* Fixing misnamed library (`#854 <https://github.com/swri-robotics/mapviz/issues/854>`_)
+* Contributors: David Anthony
+
+2.5.7 (2025-07-07)
+------------------
+* Switching recursive mutex for new API (`#853 <https://github.com/swri-robotics/mapviz/issues/853>`_)
+* Contributors: David Anthony
+
+2.5.6 (2025-06-10)
+------------------
+* Adding libopencv as a depdendency (`#849 <https://github.com/swri-robotics/mapviz/issues/849>`_)
+* Contributors: David Anthony
+
+2.5.5 (2025-06-03)
+------------------
+* Updating headers with new names (`#848 <https://github.com/swri-robotics/mapviz/issues/848>`_)
+* Contributors: David Anthony
+
+2.5.4 (2025-06-03)
+------------------
+
+2.5.3 (2025-06-02)
+------------------
+* Dependency cleanup (`#845 <https://github.com/swri-robotics/mapviz/issues/845>`_)
+* Contributors: DangitBen
+
+2.5.2 (2025-05-31)
+------------------
+
+2.5.1 (2025-05-30)
+------------------
+* Fix missing trailing slash in cmake include install (`#843 <https://github.com/swri-robotics/mapviz/issues/843>`_)
+* Contributors: DangitBen
+
+2.5.0 (2025-05-29)
+------------------
+* Correct CMake Export (`#842 <https://github.com/swri-robotics/mapviz/issues/842>`_)
+  * Removes Boost
+  * Removes deprecated ament macro
+  * General fixes to fix CMake exports and dependencies
+  ---------
+  Co-authored-by: Ben Andrew <benjamin.andrew@swri.org>
+* Contributors: David Anthony
+
+2.4.9 (2025-05-20)
+------------------
+
+2.4.8 (2025-05-20)
+------------------
+* Fixing various dependencies (`#839 <https://github.com/swri-robotics/mapviz/issues/839>`_)
+* Contributors: David Anthony
+
+2.4.7 (2025-05-20)
+------------------
+* [kilted] Update deprecated call to ament_target_dependencies (`#838 <https://github.com/swri-robotics/mapviz/issues/838>`_)
+  * Removing deprecated ament calls while building.
+* Contributors: David V. Lu!!
+
+2.4.6 (2025-04-02)
+------------------
+* Fixed textured_marker_plugin subscriptions. Added some additional error handling to mapviz plugin loading to avoid early exits. (`#836 <https://github.com/swri-robotics/mapviz/issues/836>`_)
+  Co-authored-by: Robert Brothers <robert.j.brothers21.ctr@army.mil>
+* Contributors: Robert Brothers
+
+2.4.5 (2025-01-20)
+------------------
+
+2.4.4 (2024-12-09)
+------------------
+
+2.4.3 (2024-09-18)
+------------------
+* update launch params (`#830 <https://github.com/swri-robotics/mapviz/issues/830>`_)
+* Contributors: DangitBen
+
+2.4.2 (2024-08-12)
+------------------
+* Plugin shortcuts (`#824 <https://github.com/swri-robotics/mapviz/issues/824>`_)
+  * Added hotkey for plugin remove (Ctrl + X)
+  * Added key shortcut for plugin rename (CTRL + R)
+  * Added Ctrl + N shortcut for adding new plugin.
+* Fixed qos_dpeth to qos_depth in MapvizPlugin::LoadQosConfig (`#823 <https://github.com/swri-robotics/mapviz/issues/823>`_)
+* Contributors: Robert Brothers
+
+2.4.1 (2024-08-09)
+------------------
+* Code cleanup (`#820 <https://github.com/swri-robotics/mapviz/issues/820>`_)
+  * Applying code changes that should have gone in previous release
+* Contributors: David Anthony
+
+2.4.0 (2024-08-09)
+------------------
+* Configurable qos (`#818 <https://github.com/swri-robotics/mapviz/issues/818>`_)
+  * Adding configurable QoS to UI
+  * Changing lookup duration to reduce lag
+  * Changing QoS settings on TF to reduce lag (`#815 <https://github.com/swri-robotics/mapviz/issues/815>`_)
+  * Do not attempt to transform point if a target frame is not specified (`#793 <https://github.com/swri-robotics/mapviz/issues/793>`_)
+* Contributors: David Anthony, Robert Brothers
+
 2.3.0 (2023-08-24)
 ------------------
 * Updates for rolling and removing EOL distro support (`#785 <https://github.com/swri-robotics/mapviz/issues/785>`_)

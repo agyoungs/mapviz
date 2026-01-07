@@ -1,10 +1,8 @@
 <package format="3">
   <name>mapviz</name>
-  <version>2.3.0</version>
+  <version>2.6.0</version>
   <description>
-
-     mapviz
-
+    2D mapping display with extensible data overlays 
   </description>
   <author>Marc Alban</author>
   <author>P. J. Reed</author>
@@ -20,15 +18,14 @@
   <build_depend>libqt5-opengl-dev</build_depend>
   <build_depend>ros_environment</build_depend>
 
-  <depend>cv_bridge</depend>
   <depend>geometry_msgs</depend>
   <depend>glut</depend>
   <depend>image_transport</depend>
   <depend>libglew-dev</depend>
+  <depend>libopencv-dev</depend>
   <depend>libxi-dev</depend>
   <depend>libxmu-dev</depend>
   <depend>mapviz_interfaces</depend>
-  <depend>marti_common_msgs</depend>
   <depend>pluginlib</depend>
   <depend>rclcpp</depend>
   <depend>rqt_gui_cpp</depend>

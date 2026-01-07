@@ -2,6 +2,131 @@
 Changelog for package mapviz_plugins
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+2.6.0 (2025-12-18)
+------------------
+
+2.5.10 (2025-09-04)
+-------------------
+
+2.5.9 (2025-08-27)
+------------------
+* Add error status for navsatfix uninitialized origin (`#860 <https://github.com/swri-robotics/mapviz/issues/860>`_)
+  * add error status for navsatfix uninitialized origin
+  * add hint in documentation
+  ---------
+  Co-authored-by: Ben Andrew <benjamin.andrew@swri.org>
+  Co-authored-by: David Anthony <djanthony@gmail.com>
+* Improve whitespace trimming behavior (`#859 <https://github.com/swri-robotics/mapviz/issues/859>`_)
+  moved MapvizPlugin::TrimString to protected from private
+  make plugins use TrimString instead of remove_if with std::isspace
+  Co-authored-by: Ben Andrew <benjamin.andrew@swri.org>
+* Contributors: DangitBen
+
+2.5.8 (2025-07-16)
+------------------
+
+2.5.7 (2025-07-07)
+------------------
+
+2.5.6 (2025-06-10)
+------------------
+* Adding libopencv as a depdendency (`#849 <https://github.com/swri-robotics/mapviz/issues/849>`_)
+* Contributors: David Anthony
+
+2.5.5 (2025-06-03)
+------------------
+* Updating headers with new names (`#848 <https://github.com/swri-robotics/mapviz/issues/848>`_)
+* Contributors: David Anthony
+
+2.5.4 (2025-06-03)
+------------------
+* Add Missing Qt Dependencies to Export List (`#847 <https://github.com/swri-robotics/mapviz/issues/847>`_)
+* Contributors: DangitBen
+
+2.5.3 (2025-06-02)
+------------------
+* Dependency cleanup (`#845 <https://github.com/swri-robotics/mapviz/issues/845>`_)
+* Contributors: DangitBen
+
+2.5.2 (2025-05-31)
+------------------
+* Add missing deps and remove ROS1-exclusive one (`#844 <https://github.com/swri-robotics/mapviz/issues/844>`_)
+* Contributors: Veronica Knisley
+
+2.5.1 (2025-05-30)
+------------------
+* Fix missing trailing slash in cmake include install (`#843 <https://github.com/swri-robotics/mapviz/issues/843>`_)
+* Contributors: DangitBen
+
+2.5.0 (2025-05-29)
+------------------
+* Correct CMake Export (`#842 <https://github.com/swri-robotics/mapviz/issues/842>`_)
+  * Removes Boost
+  * Removes deprecated ament macro
+  * General fixes to fix CMake exports and dependencies
+  ---------
+  Co-authored-by: Ben Andrew <benjamin.andrew@swri.org>
+* Contributors: David Anthony
+
+2.4.9 (2025-05-20)
+------------------
+
+2.4.8 (2025-05-20)
+------------------
+* Fixing various dependencies (`#839 <https://github.com/swri-robotics/mapviz/issues/839>`_)
+* Contributors: David Anthony
+
+2.4.7 (2025-05-20)
+------------------
+* [kilted] Update deprecated call to ament_target_dependencies (`#838 <https://github.com/swri-robotics/mapviz/issues/838>`_)
+  * Removing deprecated ament calls while building.
+* Contributors: David V. Lu!!
+
+2.4.6 (2025-04-02)
+------------------
+* Fixed textured_marker_plugin subscriptions. Added some additional error handling to mapviz plugin loading to avoid early exits. (`#836 <https://github.com/swri-robotics/mapviz/issues/836>`_)
+  Co-authored-by: Robert Brothers <robert.j.brothers21.ctr@army.mil>
+* Contributors: Robert Brothers
+
+2.4.5 (2025-01-20)
+------------------
+* Fix topic lists (`#833 <https://github.com/swri-robotics/mapviz/issues/833>`_)
+  Fixed problems with topic list display.
+* Contributors: nick-alton
+
+2.4.4 (2024-12-09)
+------------------
+* Add service support for select topic ui (`#832 <https://github.com/swri-robotics/mapviz/issues/832>`_)
+* Contributors: nick-alton
+
+2.4.3 (2024-09-18)
+------------------
+* update plugin subscribers to use all of qos (`#827 <https://github.com/swri-robotics/mapviz/issues/827>`_)
+  Co-authored-by: Ben <benjamin.andrew@swri.org>
+  Co-authored-by: David Anthony <djanthony@gmail.com>
+* Added kludgy install for autogened TopicSelect header that is required if external plugin packages include topic_select.h (`#825 <https://github.com/swri-robotics/mapviz/issues/825>`_)
+* Contributors: DangitBen, Robert Brothers
+
+2.4.2 (2024-08-12)
+------------------
+
+2.4.1 (2024-08-09)
+------------------
+* Code cleanup (`#820 <https://github.com/swri-robotics/mapviz/issues/820>`_)
+  * Switching to plus sign for concatenation
+  * Applying code changes that should have gone in previous release
+* Contributors: David Anthony
+
+2.4.0 (2024-08-09)
+------------------
+* Configurable qos (`#818 <https://github.com/swri-robotics/mapviz/issues/818>`_)
+  * Adding configurable QoS to UI
+  * Changing lookup duration to reduce lag
+  ---------
+  Co-authored-by: Robert Brothers <33141599+rjb0026@users.noreply.github.com>
+* Improve Font Selection Error Handling (`#794 <https://github.com/swri-robotics/mapviz/issues/794>`_)
+* Contributors: David Anthony
+
 2.3.0 (2023-08-24)
 ------------------
 

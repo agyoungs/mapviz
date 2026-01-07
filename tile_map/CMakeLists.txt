@@ -6,7 +6,7 @@ if(${CMAKE_VERSION} VERSION_LESS 3.12)
 endif()
 
 if (NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 if(${CMAKE_VERSION} VERSION_EQUAL "3.11.0" OR ${CMAKE_VERSION} VERSION_GREATER "3.11.0")
@@ -36,8 +36,6 @@ find_package(Qt5Gui REQUIRED)
 find_package(Qt5Network REQUIRED)
 find_package(Qt5OpenGL REQUIRED)
 find_package(Qt5Widgets REQUIRED)
-# Still useful?
-# add_definitions(-DWFlags=WindowFlags)
 
 ### OpenGL ###
 find_package(OpenGL REQUIRED)
@@ -54,9 +52,6 @@ pkg_check_modules(YamlCpp yaml-cpp)
 ### Use PkgConfig to find jsoncpp ###
 pkg_check_modules(JSONCPP REQUIRED jsoncpp)
 
-# Fix conflict between Boost signals used by tf and QT signals used by mapviz
-add_definitions(-DQT_NO_KEYWORDS)
-
 # Need to include the current dir to include the results of building Qt UI files
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -64,6 +59,7 @@ set(TILE_SRC_FILES
   src/image_cache.cpp
   src/texture_cache.cpp
   src/bing_source.cpp
+  src/stadia_source.cpp
   src/tile_source.cpp
   src/wmts_source.cpp
   src/${PROJECT_NAME}_view.cpp
@@ -73,36 +69,32 @@ set(QT_HEADERS
   include/${PROJECT_NAME}/tile_source.h
   include/${PROJECT_NAME}/wmts_source.h
   include/${PROJECT_NAME}/bing_source.h
+  include/${PROJECT_NAME}/stadia_source.h
 )
 qt5_wrap_cpp(TILE_SRC_FILES ${QT_HEADERS})
 add_library(${PROJECT_NAME} ${TILE_SRC_FILES})
 target_include_directories(${PROJECT_NAME}
   PUBLIC
-    include)
-target_include_directories(${PROJECT_NAME} SYSTEM
-  PUBLIC
-    GLEW::GLEW
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
     ${JSONCPP_INCLUDE_DIRS}
     ${YamlCpp_INCLUDE_DIRS})
-ament_target_dependencies(${PROJECT_NAME}
-  ament_cmake
-  mapviz
-  pluginlib
-  rclcpp
-  swri_math_util
-  swri_transform_util
-  tf2
-)
-target_link_libraries(${PROJECT_NAME}
+    
+target_link_libraries(${PROJECT_NAME} PUBLIC
   ${GLU_LIBRARY}
+  GLEW::GLEW
   ${JSONCPP_LIBRARIES}
-  ${YamlCpp_LIBRARIES}
+  ${mapviz_TARGETS}
   Qt5::Network
   Qt5::Core
   Qt5::Gui
   Qt5::OpenGL
   Qt5::Widgets
-)
+  pluginlib::pluginlib
+  rclcpp::rclcpp
+  ${swri_transform_util_TARGETS}
+  tf2::tf2
+  ${YamlCpp_LIBRARIES})
 
 set(PLUGIN_SRC_FILES
   src/${PROJECT_NAME}_plugin.cpp)
@@ -113,22 +105,23 @@ qt5_wrap_ui(PLUGIN_SRC_FILES ${PLUGIN_UI_FILES})
 qt5_wrap_cpp(PLUGIN_SRC_FILES include/${PROJECT_NAME}/${PROJECT_NAME}_plugin.h)
 
 add_library(${PROJECT_NAME}_plugin SHARED ${PLUGIN_SRC_FILES})
-target_compile_definitions(${PROJECT_NAME}_plugin PUBLIC "PLUGINLIB__DISABLE_BOOST_FUNCTIONS")
 target_link_libraries(${PROJECT_NAME}_plugin ${PROJECT_NAME})
 
-install(DIRECTORY include/${PROJECT_NAME}/
+install(DIRECTORY include/
   DESTINATION include/${PROJECT_NAME}
   FILES_MATCHING PATTERN "*.h"
 )
 
 install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_plugin
-  RUNTIME DESTINATION lib/${PROJECT_NAME}
+  EXPORT export_${PROJECT_NAME}
+  RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
 )
 
 pluginlib_export_plugin_description_file(mapviz mapviz_plugins.xml)
 
+ament_export_targets(export_${PROJECT_NAME})
 ament_export_dependencies(${RUNTIME_DEPS}
   Qt5::Network
   Qt5::Core
@@ -136,6 +129,4 @@ ament_export_dependencies(${RUNTIME_DEPS}
   Qt5::OpenGL
   Qt5::Widgets
 )
-ament_export_include_directories(include)
-ament_export_libraries(${PROJECT_NAME})
 ament_package()
