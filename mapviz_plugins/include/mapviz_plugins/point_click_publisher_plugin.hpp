@@ -30,18 +30,15 @@
 #ifndef MAPVIZ_PLUGINS__POINT_CLICK_PUBLISHER_PLUGIN_HPP_
 #define MAPVIZ_PLUGINS__POINT_CLICK_PUBLISHER_PLUGIN_HPP_
 
-// Include mapviz_plugin.h first to ensure GL deps are included in the right order
-#include <mapviz/mapviz_plugin.hpp>
-
+// Include mapviz_plugin.h first to ensure GL deps are included in the right
+// order
 #include <QOpenGLWidget>
 #include <QTimer>
-#include <mapviz/map_canvas.hpp>
-
-#include <mapviz_plugins/canvas_click_filter.hpp>
-
-#include <rclcpp/rclcpp.hpp>
-
 #include <geometry_msgs/msg/point_stamped.hpp>
+#include <mapviz/map_canvas.hpp>
+#include <mapviz/mapviz_plugin.hpp>
+#include <mapviz_plugins/canvas_click_filter.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 // C++ Standard Libraries
 #include <string>
@@ -54,12 +51,10 @@
  * canvas, then converts the coordinates into a specified frame and publishes
  * them as PointStamped messages on a specified topic.
  */
-namespace mapviz_plugins
-{
-class PointClickPublisherPlugin : public mapviz::MapvizPlugin
-{
+namespace mapviz_plugins {
+class PointClickPublisherPlugin : public mapviz::MapvizPlugin {
   Q_OBJECT
-public:
+ public:
   PointClickPublisherPlugin();
   ~PointClickPublisherPlugin() override;
 
@@ -80,12 +75,12 @@ public:
 
   QWidget* GetConfigWidget(QWidget* parent) override;
 
-protected Q_SLOTS:
+ protected Q_SLOTS:
   void pointClicked(const QPointF& point);
   void topicChanged(const QString& topic);
   void updateFrames();
 
-private:
+ private:
   Ui::point_click_publisher_config ui_{};
   QWidget* config_widget_;
 
@@ -93,8 +88,9 @@ private:
   mapviz::MapCanvas* canvas_;
 
   QTimer frame_timer_;
-  rclcpp::Publisher<geometry_msgs::msg::PointStamped>::SharedPtr point_publisher_;
+  rclcpp::Publisher<geometry_msgs::msg::PointStamped>::SharedPtr
+      point_publisher_;
 };
-}   // namespace mapviz_plugins
+}  // namespace mapviz_plugins
 
 #endif  // MAPVIZ_PLUGINS__POINT_CLICK_PUBLISHER_PLUGIN_HPP_

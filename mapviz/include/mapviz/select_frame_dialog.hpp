@@ -32,11 +32,9 @@
 #include <tf2_ros/buffer.h>
 
 #include <QDialog>
-
 #include <memory>
 #include <string>
 #include <vector>
-
 
 QT_BEGIN_NAMESPACE
 class QLineEdit;
@@ -44,15 +42,13 @@ class QListWidget;
 class QPushButton;
 QT_END_NAMESPACE
 
-namespace mapviz
-{
+namespace mapviz {
 /**
  * Provides a dialog for the user to select one or more TF frames.
  * Several static functions are provided that can be used instead of
  * instantiating the class directly.
  */
-class SelectFrameDialog : public QDialog
-{
+class SelectFrameDialog : public QDialog {
   Q_OBJECT
 
  public:
@@ -62,9 +58,8 @@ class SelectFrameDialog : public QDialog
    * If the user cancels the selection or doesn't make a valid
    * selection, the returned string be empty.
    */
-  static std::string selectFrame(
-      std::shared_ptr<tf2_ros::Buffer> tf_buffer,
-      QWidget *parent = nullptr);
+  static std::string selectFrame(std::shared_ptr<tf2_ros::Buffer> tf_buffer,
+                                 QWidget *parent = nullptr);
 
   /**
    * Present the user with a dialog to select a multiple TF frames.
@@ -73,8 +68,7 @@ class SelectFrameDialog : public QDialog
    * selection, the returned vector will be empty.
    */
   static std::vector<std::string> selectFrames(
-      std::shared_ptr<tf2_ros::Buffer> tf_buffer,
-    QWidget *parent = nullptr);
+      std::shared_ptr<tf2_ros::Buffer> tf_buffer, QWidget *parent = nullptr);
 
   /**
    * Constructor for the SelectFrameDialog.
@@ -105,8 +99,7 @@ class SelectFrameDialog : public QDialog
   void timerEvent(QTimerEvent *) override;
   void closeEvent(QCloseEvent *) override;
 
-  std::vector<std::string> filterFrames(
-    const std::vector<std::string> &) const;
+  std::vector<std::string> filterFrames(const std::vector<std::string> &) const;
 
  private Q_SLOTS:
   void fetchFrames();

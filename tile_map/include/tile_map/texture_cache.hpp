@@ -32,53 +32,49 @@
 
 #include <QCache>
 #include <QOpenGLTexture>
-
 #include <rclcpp/logger.hpp>
-
 #include <tile_map/image_cache.hpp>
 
-namespace tile_map
-{
-  class Texture
-  {
-  public:
-    Texture(std::unique_ptr<QOpenGLTexture> texture, size_t hash);
-    ~Texture();
+namespace tile_map {
+class Texture {
+ public:
+  Texture(std::unique_ptr<QOpenGLTexture> texture, size_t hash);
+  ~Texture();
 
-    const std::unique_ptr<QOpenGLTexture>& GetTexture() const { return texture_; }
-    const size_t url_hash;
+  const std::unique_ptr<QOpenGLTexture>& GetTexture() const { return texture_; }
+  const size_t url_hash;
 
-    bool failed;
+  bool failed;
 
-  private:
-    std::unique_ptr<QOpenGLTexture> texture_;
-  };
-  typedef std::shared_ptr<Texture> TexturePtr;
+ private:
+  std::unique_ptr<QOpenGLTexture> texture_;
+};
+typedef std::shared_ptr<Texture> TexturePtr;
 
-  class TextureCache
-  {
-  public:
-    explicit TextureCache(ImageCachePtr image_cache,
-        size_t size = 512,
-        rclcpp::Logger logger = rclcpp::get_logger("tile_map::TextureCache"));
+class TextureCache {
+ public:
+  explicit TextureCache(
+      ImageCachePtr image_cache, size_t size = 512,
+      rclcpp::Logger logger = rclcpp::get_logger("tile_map::TextureCache"));
 
-    TexturePtr GetTexture(size_t url_hash, const QString& url, bool& failed, int priority);
-    void AddTexture(const TexturePtr& texture);
+  TexturePtr GetTexture(size_t url_hash, const QString& url, bool& failed,
+                        int priority);
+  void AddTexture(const TexturePtr& texture);
 
-    void IncrementFrame();
+  void IncrementFrame();
 
-    void SetLogger(rclcpp::Logger logger);
+  void SetLogger(rclcpp::Logger logger);
 
-    void Clear();
+  void Clear();
 
-  private:
-    QCache<size_t, TexturePtr> cache_;
+ private:
+  QCache<size_t, TexturePtr> cache_;
 
-    ImageCachePtr image_cache_;
+  ImageCachePtr image_cache_;
 
-    rclcpp::Logger logger_;
-  };
-  typedef std::shared_ptr<TextureCache> TextureCachePtr;
-}
+  rclcpp::Logger logger_;
+};
+typedef std::shared_ptr<TextureCache> TextureCachePtr;
+}  // namespace tile_map
 
 #endif  // TILE_MAP_TEXTURE_CACHE_HPP_

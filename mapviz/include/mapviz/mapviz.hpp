@@ -31,68 +31,62 @@
 #define MAPVIZ__MAPVIZ_HPP_
 
 // QT libraries
-#include <QtGui/QtGui>
-#include <QDialog>
-#include <QMenu>
-#include <QTimer>
-#include <QString>
-#include <QShowEvent>
+#include <swri_transform_util/transform_manager.h>
+
 #include <QCloseEvent>
-#include <QListWidgetItem>
-#include <QModelIndex>
 #include <QColor>
+#include <QDialog>
+#include <QListWidgetItem>
+#include <QMainWindow>
+#include <QMenu>
+#include <QModelIndex>
+#include <QShortcut>
+#include <QShowEvent>
+#include <QString>
+#include <QStringList>
+#include <QTimer>
 #include <QToolButton>
 #include <QWidget>
-#include <QStringList>
-#include <QMainWindow>
-#include <QShortcut>
-
-#include <swri_transform_util/transform_manager.h>
-#include <mapviz_interfaces/srv/add_mapviz_display.hpp>  // Service
-#include <mapviz/mapviz_plugin.hpp>
+#include <QtGui/QtGui>
 #include <mapviz/map_canvas.hpp>
+#include <mapviz/mapviz_plugin.hpp>
 #include <mapviz/video_writer.hpp>
+#include <mapviz_interfaces/srv/add_mapviz_display.hpp>  // Service
 
 // ROS libraries
-#include <rclcpp/rclcpp.hpp>
-#include <pluginlib/class_loader.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 #include <yaml-cpp/yaml.h>
+
+#include <pluginlib/class_loader.hpp>
+#include <rclcpp/rclcpp.hpp>
 #include <std_srvs/srv/empty.hpp>
 
 // C++ standard libraries
-#include <string>
-#include <vector>
 #include <map>
 #include <memory>
+#include <string>
+#include <vector>
 
 // Auto-generated UI files
+#include "mapviz/stopwatch.hpp"
 #include "ui/ui_mapviz.h"
 #include "ui/ui_pluginselect.h"
 
-
-#include "mapviz/stopwatch.hpp"
-
-namespace mapviz
-{
-class Mapviz : public QMainWindow
-{
+namespace mapviz {
+class Mapviz : public QMainWindow {
   Q_OBJECT
 
-public:
-  Mapviz(bool is_standalone,
-    int argc,
-    char** argv,
-    QWidget *parent = 0,
-    Qt::WindowFlags flags = Qt::WindowFlags());
+ public:
+  Mapviz(bool is_standalone, int argc, char** argv, QWidget* parent = 0,
+         Qt::WindowFlags flags = Qt::WindowFlags());
   ~Mapviz();
 
   rclcpp::Node::SharedPtr GetNode();
 
   void Initialize();
 
-public Q_SLOTS:
+ public Q_SLOTS:
   void AutoSave();
   void OpenConfig();
   void SaveConfig();
@@ -101,7 +95,7 @@ public Q_SLOTS:
   void RemoveDisplay();
   void RemoveDisplay(QListWidgetItem* item);
   void DuplicateDisplay();
-  void DuplicateDisplay(QListWidgetItem *item);
+  void DuplicateDisplay(QListWidgetItem* item);
   void RenameDisplay();
   void RenameDisplay(QListWidgetItem* item);
   void ReorderDisplays();
@@ -128,14 +122,14 @@ public Q_SLOTS:
   void Force720p(bool on);
   void Force480p(bool on);
   void SetResizable(bool on);
-  void SelectBackgroundColor(const QColor &color);
+  void SelectBackgroundColor(const QColor& color);
   void SetCaptureDirectory();
   void Hover(double x, double y, double scale);
   void Recenter();
   void HandleProfileTimer();
   void ClearHistory();
 
-Q_SIGNALS:
+ Q_SIGNALS:
   /**
    * Emitted every time a frame is grabbed when Mapviz is in video recording
    * mode, typically at a rate of 30 FPS.
@@ -145,20 +139,17 @@ Q_SIGNALS:
   void FrameGrabbed(QImage);
   void ImageTransportChanged();
 
-protected:
+ protected:
   void Open(const std::string& filename);
   void Save(const std::string& filename);
 
-  MapvizPluginPtr CreateNewDisplay(
-      const std::string& name,
-      const std::string& type,
-      bool visible,
-      bool collapsed,
-      int draw_order = 0);
+  MapvizPluginPtr CreateNewDisplay(const std::string& name,
+                                   const std::string& type, bool visible,
+                                   bool collapsed, int draw_order = 0);
 
   void AddDisplay(
-    const mapviz_interfaces::srv::AddMapvizDisplay::Request::SharedPtr req,
-    mapviz_interfaces::srv::AddMapvizDisplay::Response::SharedPtr resp);
+      const mapviz_interfaces::srv::AddMapvizDisplay::Request::SharedPtr req,
+      mapviz_interfaces::srv::AddMapvizDisplay::Response::SharedPtr resp);
 
   void ClearDisplays();
   void AdjustWindowSize();
@@ -194,7 +185,7 @@ protected:
   QPushButton* stop_button_;
   QPushButton* screenshot_button_;
 
-  int    argc_;
+  int argc_;
   char** argv_;
 
   bool is_standalone_;
@@ -211,7 +202,8 @@ protected:
   bool updating_frames_;
 
   std::shared_ptr<rclcpp::Node> node_;
-  rclcpp::Service<mapviz_interfaces::srv::AddMapvizDisplay>::SharedPtr add_display_srv_;
+  rclcpp::Service<mapviz_interfaces::srv::AddMapvizDisplay>::SharedPtr
+      add_display_srv_;
   std::shared_ptr<tf2_ros::Buffer> tf_buf_;
   std::shared_ptr<tf2_ros::TransformListener> tf_;
   swri_transform_util::TransformManagerPtr tf_manager_;
@@ -225,9 +217,10 @@ protected:
   QLabel* title_label_ = nullptr;
   QWidget* collapsed_label_ = nullptr;
   bool config_panel_pinned_ = false;
+  int pinned_panel_width_ = 332;
 
   Stopwatch meas_spin_;
 };
-}   // namespace mapviz
+}  // namespace mapviz
 
 #endif  // MAPVIZ__MAPVIZ_HPP_

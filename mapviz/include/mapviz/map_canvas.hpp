@@ -31,20 +31,20 @@
 #define MAPVIZ__MAP_CANVAS_HPP_
 
 // QT libraries
+#include <QColor>
+#include <QMouseEvent>
 #include <QOpenGLFunctions_1_5>
 #include <QOpenGLWidget>
-#include <QMouseEvent>
-#include <QWheelEvent>
-#include <QColor>
 #include <QTimer>
+#include <QWheelEvent>
 
 // ROS libraries
-#include <rclcpp/rclcpp.hpp>
-#include <tf2/transform_datatypes.hpp>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/transform_listener.h>
 
 #include <mapviz/mapviz_plugin.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <tf2/transform_datatypes.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 // C++ standard libraries
 #include <cstring>
@@ -53,14 +53,12 @@
 #include <string>
 #include <vector>
 
-namespace mapviz
-{
-class MapCanvas : public QOpenGLWidget, protected QOpenGLFunctions_1_5
-{
+namespace mapviz {
+class MapCanvas : public QOpenGLWidget, protected QOpenGLFunctions_1_5 {
   Q_OBJECT
 
-public:
-  explicit MapCanvas(QWidget *parent = nullptr);
+ public:
+  explicit MapCanvas(QWidget* parent = nullptr);
   ~MapCanvas() override;
 
   void InitializeTf(std::shared_ptr<tf2_ros::Buffer> tf);
@@ -85,40 +83,31 @@ public:
   float OffsetX() const { return offset_x_; }
   float OffsetY() const { return offset_y_; }
 
-
-  void setCanvasAbleToMove(bool assigning)
-  {
-    canvas_able_to_move_ = assigning;
-  }
+  void setCanvasAbleToMove(bool assigning) { canvas_able_to_move_ = assigning; }
 
   void leaveEvent(QEvent* e) override;
 
-  void SetViewScale(float scale)
-  {
+  void SetViewScale(float scale) {
     view_scale_ = scale;
     UpdateView();
   }
 
-  void SetOffsetX(float x)
-  {
+  void SetOffsetX(float x) {
     offset_x_ = x;
     UpdateView();
   }
 
-  void SetOffsetY(float y)
-  {
+  void SetOffsetY(float y) {
     offset_y_ = y;
     UpdateView();
   }
 
-  void SetBackground(const QColor& color)
-  {
+  void SetBackground(const QColor& color) {
     bg_color_ = color;
     update();
   }
 
-  void CaptureFrames(bool enabled)
-  {
+  void CaptureFrames(bool enabled) {
     capture_frames_ = enabled;
     update();
   }
@@ -130,8 +119,7 @@ public:
    * @param buffer An initialize buffer to copy data into
    * @return false if the current capture buffer is empty
    */
-  bool CopyCaptureBuffer(uchar* buffer)
-  {
+  bool CopyCaptureBuffer(uchar* buffer) {
     if (!capture_buffer_.empty()) {
       memcpy(&buffer[0], &capture_buffer_[0], capture_buffer_.size());
       return true;
@@ -146,8 +134,7 @@ public:
    * @param buffer A vector to copy the capture buffer into.
    * @return false if the current capture buffer is empty
    */
-  bool CopyCaptureBuffer(std::vector<uint8_t>& buffer)
-  {
+  bool CopyCaptureBuffer(std::vector<uint8_t>& buffer) {
     buffer.clear();
     if (!capture_buffer_.empty()) {
       buffer.resize(capture_buffer_.size());
@@ -161,13 +148,13 @@ public:
 
   void CaptureFrame(bool force = false);
 
-Q_SIGNALS:
+ Q_SIGNALS:
   void Hover(double x, double y, double scale);
 
-public Q_SLOTS:
+ public Q_SLOTS:
   void setFrameRate(const double fps);
 
-protected:
+ protected:
   void initializeGL() override;
   void initGlBlending();
   void applyAntialiasingState();
@@ -251,6 +238,6 @@ protected:
 
   std::vector<uint8_t> capture_buffer_;
 };
-}   // namespace mapviz
+}  // namespace mapviz
 
 #endif  // MAPVIZ__MAP_CANVAS_HPP_

@@ -52,19 +52,18 @@
 
 using namespace std::chrono_literals;
 
-PLUGINLIB_EXPORT_CLASS(mapviz_plugins::TexturedMarkerPlugin, mapviz::MapvizPlugin)
+PLUGINLIB_EXPORT_CLASS(mapviz_plugins::TexturedMarkerPlugin,
+                       mapviz::MapvizPlugin)
 
-namespace mapviz_plugins
-{
-TexturedMarkerPlugin::TexturedMarkerPlugin() :
-  MapvizPlugin(),
-  ui_(),
-  alphaVal_(1.0f),
-  config_widget_(new QWidget()),
-  has_message_(false),
-  topic_(""),
-  qos_(rmw_qos_profile_default)
-{
+namespace mapviz_plugins {
+TexturedMarkerPlugin::TexturedMarkerPlugin()
+    : MapvizPlugin(),
+      ui_(),
+      alphaVal_(1.0f),
+      config_widget_(new QWidget()),
+      has_message_(false),
+      topic_(""),
+      qos_(rmw_qos_profile_default) {
   ui_.setupUi(config_widget_);
 
   // Set background white
@@ -77,39 +76,41 @@ TexturedMarkerPlugin::TexturedMarkerPlugin() :
   p3.setColor(QPalette::Text, Qt::red);
   ui_.status->setPalette(p3);
 
-  QObject::connect(ui_.selecttopic, SIGNAL(clicked()), this, SLOT(SelectTopic()));
-  QObject::connect(ui_.topic, SIGNAL(editingFinished()), this, SLOT(TopicEdited()));
+  QObject::connect(ui_.selecttopic, SIGNAL(clicked()), this,
+                   SLOT(SelectTopic()));
+  QObject::connect(ui_.topic, SIGNAL(editingFinished()), this,
+                   SLOT(TopicEdited()));
   QObject::connect(ui_.clear, SIGNAL(clicked()), this, SLOT(ClearHistory()));
-  QObject::connect(ui_.alphaSlide, SIGNAL(valueChanged(int)), this, SLOT(SetAlphaLevel(int)));
+  QObject::connect(ui_.alphaSlide, SIGNAL(valueChanged(int)), this,
+                   SLOT(SetAlphaLevel(int)));
 
-  // By using a signal/slot connection, we ensure that we only generate GL textures on the
-  // main thread in case a non-main thread handles the ROS callbacks.
-  qRegisterMetaType<marti_visualization_msgs::msg::TexturedMarker>("TexturedMarker");
+  // By using a signal/slot connection, we ensure that we only generate GL
+  // textures on the main thread in case a non-main thread handles the ROS
+  // callbacks.
+  qRegisterMetaType<marti_visualization_msgs::msg::TexturedMarker>(
+      "TexturedMarker");
 
-  QObject::connect(this,
-    SIGNAL(MarkerReceived(marti_visualization_msgs::msg::TexturedMarker)),
-    this,
-    SLOT(ProcessMarker(marti_visualization_msgs::msg::TexturedMarker)));
+  QObject::connect(
+      this,
+      SIGNAL(MarkerReceived(marti_visualization_msgs::msg::TexturedMarker)),
+      this, SLOT(ProcessMarker(marti_visualization_msgs::msg::TexturedMarker)));
 }
 
-void TexturedMarkerPlugin::ClearHistory()
-{
+void TexturedMarkerPlugin::ClearHistory() {
   RCLCPP_DEBUG(node_->get_logger(), "TexturedMarkerPlugin::ClearHistory()");
   markers_.clear();
 }
 
-// TODO(P. J. Reed) could instead use the value() function on alphaSlide when needed,
+// TODO(P. J. Reed) could instead use the value() function on alphaSlide when
+// needed,
 //   assuming value is always good
 // Modify min and max values by adjusting textured_marker_config.ui
-void TexturedMarkerPlugin::SetAlphaLevel(int alpha)
-{
+void TexturedMarkerPlugin::SetAlphaLevel(int alpha) {
   int max = ui_.alphaSlide->maximum();
   int min = ui_.alphaSlide->minimum();
 
-  if (max < 1 ||
-    min < 0 ||
-    alpha > max ||
-    alpha < min)    // ignore negative min and max
+  if (max < 1 || min < 0 || alpha > max ||
+      alpha < min)  // ignore negative min and max
   {
     alphaVal_ = 1.0f;
     PrintWarning("Invalid alpha input.");
@@ -120,27 +121,23 @@ void TexturedMarkerPlugin::SetAlphaLevel(int alpha)
   }
 }
 
-void TexturedMarkerPlugin::SelectTopic()
-{
+void TexturedMarkerPlugin::SelectTopic() {
   auto [topic, qos] = SelectTopicDialog::selectTopic(
-    node_,
-    "marti_visualization_msgs/msg/TexturedMarker",
-    "marti_visualization_msgs/msg/TexturedMarkerArray",
-    qos_);
+      node_, "marti_visualization_msgs/msg/TexturedMarker",
+      "marti_visualization_msgs/msg/TexturedMarkerArray", qos_);
 
   if (!topic.empty()) {
     connectCallback(topic, qos);
   }
 }
 
-void TexturedMarkerPlugin::TopicEdited()
-{
+void TexturedMarkerPlugin::TopicEdited() {
   std::string topic = ui_.topic->text().trimmed().toStdString();
   connectCallback(topic, qos_);
 }
 
-void TexturedMarkerPlugin::connectCallback(const std::string& topic, const rmw_qos_profile_t& qos)
-{
+void TexturedMarkerPlugin::connectCallback(const std::string& topic,
+                                           const rmw_qos_profile_t& qos) {
   ui_.topic->setText(QString::fromStdString(topic));
 
   if ((topic != topic_) || !qosEqual(qos, qos_)) {
@@ -160,39 +157,38 @@ void TexturedMarkerPlugin::connectCallback(const std::string& topic, const rmw_q
         rclcpp::QoS topic_qos(rclcpp::QoSInitialization::from_rmw(qos_));
         std::string topic_type = known_topics[topic_][0];
         if (topic_type == "marti_visualization_msgs/msg/TexturedMarkerArray") {
-          marker_arr_sub_ =
-            node_->create_subscription<marti_visualization_msgs::msg::TexturedMarkerArray>(
-            topic_,
-            rclcpp::QoS(rclcpp::QoSInitialization::from_rmw(qos), qos),
-            std::bind(&TexturedMarkerPlugin::MarkerArrayCallback, this, std::placeholders::_1)
-            );
+          marker_arr_sub_ = node_->create_subscription<
+              marti_visualization_msgs::msg::TexturedMarkerArray>(
+              topic_,
+              rclcpp::QoS(rclcpp::QoSInitialization::from_rmw(qos), qos),
+              std::bind(&TexturedMarkerPlugin::MarkerArrayCallback, this,
+                        std::placeholders::_1));
           RCLCPP_INFO(node_->get_logger(), "Subscribing to %s", topic_.c_str());
-        }
-        else if(topic_type == "marti_visualization_msgs/msg/TexturedMarker") {
-          marker_sub_ = node_->create_subscription<marti_visualization_msgs::msg::TexturedMarker>(
-            topic_,
-            rclcpp::QoS(rclcpp::QoSInitialization::from_rmw(qos), qos),
-            std::bind(&TexturedMarkerPlugin::MarkerCallback, this, std::placeholders::_1)
-          );
+        } else if (topic_type ==
+                   "marti_visualization_msgs/msg/TexturedMarker") {
+          marker_sub_ = node_->create_subscription<
+              marti_visualization_msgs::msg::TexturedMarker>(
+              topic_,
+              rclcpp::QoS(rclcpp::QoSInitialization::from_rmw(qos), qos),
+              std::bind(&TexturedMarkerPlugin::MarkerCallback, this,
+                        std::placeholders::_1));
           RCLCPP_INFO(node_->get_logger(), "Subscribing to %s", topic_.c_str());
-        }
-        else {
+        } else {
           RCLCPP_ERROR(node_->get_logger(),
-              "Unable to subscribe to topic %s (unsupported type %s).",
-              topic_.c_str(), topic_type.c_str());
+                       "Unable to subscribe to topic %s (unsupported type %s).",
+                       topic_.c_str(), topic_type.c_str());
         }
-      }
-      else {
+      } else {
         RCLCPP_ERROR(node_->get_logger(),
-            "Unable to subscribe to topic %s, (does not exist).", topic_.c_str());
+                     "Unable to subscribe to topic %s, (does not exist).",
+                     topic_.c_str());
       }
     }
   }
-
 }
 
-void TexturedMarkerPlugin::ProcessMarker(const marti_visualization_msgs::msg::TexturedMarker marker)
-{
+void TexturedMarkerPlugin::ProcessMarker(
+    const marti_visualization_msgs::msg::TexturedMarker marker) {
   if (!has_message_) {
     initialized_ = true;
     has_message_ = true;
@@ -204,7 +200,7 @@ void TexturedMarkerPlugin::ProcessMarker(const marti_visualization_msgs::msg::Te
   // them individually.
 
   if (marker.action == marti_visualization_msgs::msg::TexturedMarker::ADD) {
-    MarkerData & markerData = markers_[marker.ns][marker.id];
+    MarkerData& markerData = markers_[marker.ns][marker.id];
     markerData.stamp = marker.header.stamp;
 
     markerData.transformed = true;
@@ -212,9 +208,11 @@ void TexturedMarkerPlugin::ProcessMarker(const marti_visualization_msgs::msg::Te
     markerData.source_frame_ = marker.header.frame_id;
 
     swri_transform_util::Transform transform;
-    if (!GetTransform(markerData.source_frame_, marker.header.stamp, transform)) {
+    if (!GetTransform(markerData.source_frame_, marker.header.stamp,
+                      transform)) {
       markerData.transformed = false;
-      PrintError("No transform between " + markerData.source_frame_ + " and " + target_frame_);
+      PrintError("No transform between " + markerData.source_frame_ + " and " +
+                 target_frame_);
     }
 
     // Handle lifetime parameter
@@ -227,15 +225,10 @@ void TexturedMarkerPlugin::ProcessMarker(const marti_visualization_msgs::msg::Te
     }
 
     tf2::Transform offset(
-      tf2::Quaternion(
-        marker.pose.orientation.x,
-        marker.pose.orientation.y,
-        marker.pose.orientation.z,
-        marker.pose.orientation.w),
-      tf2::Vector3(
-        marker.pose.position.x,
-        marker.pose.position.y,
-        marker.pose.position.z));
+        tf2::Quaternion(marker.pose.orientation.x, marker.pose.orientation.y,
+                        marker.pose.orientation.z, marker.pose.orientation.w),
+        tf2::Vector3(marker.pose.position.x, marker.pose.position.y,
+                     marker.pose.position.z));
 
     double right = marker.image.width * marker.resolution / 2.0;
     double left = -right;
@@ -272,7 +265,8 @@ void TexturedMarkerPlugin::ProcessMarker(const marti_visualization_msgs::msg::Te
       new_size = new_size << 1;
     }
 
-    if (new_size != markerData.texture_size_ || markerData.encoding_ != marker.image.encoding) {
+    if (new_size != markerData.texture_size_ ||
+        markerData.encoding_ != marker.image.encoding) {
       markerData.texture_size_ = new_size;
 
       markerData.encoding_ = marker.image.encoding;
@@ -297,27 +291,27 @@ void TexturedMarkerPlugin::ProcessMarker(const marti_visualization_msgs::msg::Te
       size_t bpp = 0;
       if (markerData.encoding_ == sensor_msgs::image_encodings::BGRA8) {
         bpp = 4;
-        markerData.texture_.resize(static_cast<size_t>(markerData.texture_size_ *
-          markerData.texture_size_ * 4));
+        markerData.texture_.resize(static_cast<size_t>(
+            markerData.texture_size_ * markerData.texture_size_ * 4));
       } else if (markerData.encoding_ == sensor_msgs::image_encodings::BGR8) {
         bpp = 3;
-        markerData.texture_.resize(static_cast<size_t>(markerData.texture_size_ *
-          markerData.texture_size_ * 3));
+        markerData.texture_.resize(static_cast<size_t>(
+            markerData.texture_size_ * markerData.texture_size_ * 3));
       } else if (markerData.encoding_ == sensor_msgs::image_encodings::MONO8) {
         bpp = 1;
-        markerData.texture_.resize(static_cast<size_t>(markerData.texture_size_ *
-          markerData.texture_size_));
+        markerData.texture_.resize(static_cast<size_t>(
+            markerData.texture_size_ * markerData.texture_size_));
       } else {
-        RCLCPP_WARN(node_->get_logger(), "Unsupported encoding: %s", markerData.encoding_.c_str());
+        RCLCPP_WARN(node_->get_logger(), "Unsupported encoding: %s",
+                    markerData.encoding_.c_str());
       }
 
       size_t expected = marker.image.height * marker.image.width * bpp;
       if (!markerData.texture_.empty() && marker.image.data.size() < expected) {
-        RCLCPP_ERROR(
-          node_->get_logger(),
-          "TexturedMarker image had expected data size %li but only got %li. Dropping message.",
-          expected,
-          marker.image.data.size());
+        RCLCPP_ERROR(node_->get_logger(),
+                     "TexturedMarker image had expected data size %li but only "
+                     "got %li. Dropping message.",
+                     expected, marker.image.data.size());
         return;
       }
 
@@ -349,16 +343,9 @@ void TexturedMarkerPlugin::ProcessMarker(const marti_visualization_msgs::msg::Te
         }
       }
 
-      glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_RGBA,
-        markerData.texture_size_,
-        markerData.texture_size_,
-        0,
-        GL_BGRA,
-        GL_UNSIGNED_BYTE,
-        markerData.texture_.data());
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, markerData.texture_size_,
+                   markerData.texture_size_, 0, GL_BGRA, GL_UNSIGNED_BYTE,
+                   markerData.texture_.data());
     } else if (markerData.encoding_ == sensor_msgs::image_encodings::BGR8) {
       for (size_t row = 0; row < marker.image.height; row++) {
         for (size_t col = 0; col < marker.image.width; col++) {
@@ -371,16 +358,9 @@ void TexturedMarkerPlugin::ProcessMarker(const marti_visualization_msgs::msg::Te
         }
       }
 
-      glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_RGB,
-        markerData.texture_size_,
-        markerData.texture_size_,
-        0,
-        GL_BGR,
-        GL_UNSIGNED_BYTE,
-        markerData.texture_.data());
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, markerData.texture_size_,
+                   markerData.texture_size_, 0, GL_BGR, GL_UNSIGNED_BYTE,
+                   markerData.texture_.data());
     } else if (markerData.encoding_ == sensor_msgs::image_encodings::MONO8) {
       for (size_t row = 0; row < marker.image.height; row++) {
         for (size_t col = 0; col < marker.image.width; col++) {
@@ -391,67 +371,54 @@ void TexturedMarkerPlugin::ProcessMarker(const marti_visualization_msgs::msg::Te
         }
       }
 
-      glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_LUMINANCE,
-        markerData.texture_size_,
-        markerData.texture_size_,
-        0,
-        GL_LUMINANCE,
-        GL_UNSIGNED_BYTE,
-        markerData.texture_.data());
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, markerData.texture_size_,
+                   markerData.texture_size_, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE,
+                   markerData.texture_.data());
     }
 
     glBindTexture(GL_TEXTURE_2D, 0);
 
     markerData.texture_x_ = static_cast<float>(marker.image.width) /
-      static_cast<float>(markerData.texture_size_);
+                            static_cast<float>(markerData.texture_size_);
     markerData.texture_y_ = static_cast<float>(marker.image.height) /
-      static_cast<float>(markerData.texture_size_);
+                            static_cast<float>(markerData.texture_size_);
   } else {
     markers_[marker.ns].erase(marker.id);
   }
 }
 
 void TexturedMarkerPlugin::MarkerCallback(
-  marti_visualization_msgs::msg::TexturedMarker::ConstSharedPtr marker)
-{
+    marti_visualization_msgs::msg::TexturedMarker::ConstSharedPtr marker) {
   Q_EMIT MarkerReceived(*marker);
 }
 
 void TexturedMarkerPlugin::MarkerArrayCallback(
-  marti_visualization_msgs::msg::TexturedMarkerArray::ConstSharedPtr markers)
-{
-  for (const auto & marker : markers->markers) {
+    marti_visualization_msgs::msg::TexturedMarkerArray::ConstSharedPtr
+        markers) {
+  for (const auto& marker : markers->markers) {
     Q_EMIT MarkerReceived(marker);
   }
 }
 
-void TexturedMarkerPlugin::PrintError(const std::string & message)
-{
+void TexturedMarkerPlugin::PrintError(const std::string& message) {
   PrintErrorHelper(ui_.status, message);
 }
 
-void TexturedMarkerPlugin::PrintInfo(const std::string & message)
-{
+void TexturedMarkerPlugin::PrintInfo(const std::string& message) {
   PrintInfoHelper(ui_.status, message);
 }
 
-void TexturedMarkerPlugin::PrintWarning(const std::string & message)
-{
+void TexturedMarkerPlugin::PrintWarning(const std::string& message) {
   PrintWarningHelper(ui_.status, message);
 }
 
-QWidget * TexturedMarkerPlugin::GetConfigWidget(QWidget * parent)
-{
+QWidget* TexturedMarkerPlugin::GetConfigWidget(QWidget* parent) {
   config_widget_->setParent(parent);
 
   return config_widget_;
 }
 
-bool TexturedMarkerPlugin::Initialize(QOpenGLWidget * canvas)
-{
+bool TexturedMarkerPlugin::Initialize(QOpenGLWidget* canvas) {
   canvas_ = canvas;
   canvas->makeCurrent();
   initializeOpenGLFunctions();
@@ -460,18 +427,18 @@ bool TexturedMarkerPlugin::Initialize(QOpenGLWidget * canvas)
   return true;
 }
 
-void TexturedMarkerPlugin::Draw(double x, double y, double scale)
-{
+void TexturedMarkerPlugin::Draw(double x, double y, double scale) {
   rclcpp::Time now = rclcpp::Time();
 
-  float alphaVal = alphaVal_;   // Set all markers to same alpha value
+  float alphaVal = alphaVal_;  // Set all markers to same alpha value
 
   std::map<std::string, std::map<int, MarkerData>>::iterator nsIter;
   for (nsIter = markers_.begin(); nsIter != markers_.end(); ++nsIter) {
     std::map<int, MarkerData>::iterator markerIter;
-    for (markerIter = nsIter->second.begin(); markerIter != nsIter->second.end(); ++markerIter) {
-      MarkerData & marker = markerIter->second;
-      marker.alpha_ = alphaVal;   // Update current marker's alpha value
+    for (markerIter = nsIter->second.begin();
+         markerIter != nsIter->second.end(); ++markerIter) {
+      MarkerData& marker = markerIter->second;
+      marker.alpha_ = alphaVal;  // Update current marker's alpha value
 
       if (marker.expire_time > now) {
         if (marker.transformed) {
@@ -486,19 +453,25 @@ void TexturedMarkerPlugin::Draw(double x, double y, double scale)
           double marker_x = marker.texture_x_;
           double marker_y = marker.texture_y_;
 
-          glTexCoord2d(0, 0); glVertex2d(
-            marker.transformed_quad_[0].x(), marker.transformed_quad_[0].y());
-          glTexCoord2d(marker_x, 0); glVertex2d(
-            marker.transformed_quad_[1].x(), marker.transformed_quad_[1].y());
-          glTexCoord2d(marker_x, marker_y); glVertex2d(
-            marker.transformed_quad_[2].x(), marker.transformed_quad_[2].y());
+          glTexCoord2d(0, 0);
+          glVertex2d(marker.transformed_quad_[0].x(),
+                     marker.transformed_quad_[0].y());
+          glTexCoord2d(marker_x, 0);
+          glVertex2d(marker.transformed_quad_[1].x(),
+                     marker.transformed_quad_[1].y());
+          glTexCoord2d(marker_x, marker_y);
+          glVertex2d(marker.transformed_quad_[2].x(),
+                     marker.transformed_quad_[2].y());
 
-          glTexCoord2d(0, 0); glVertex2d(
-            marker.transformed_quad_[3].x(), marker.transformed_quad_[3].y());
-          glTexCoord2d(marker_x, marker_y); glVertex2d(
-            marker.transformed_quad_[4].x(), marker.transformed_quad_[4].y());
-          glTexCoord2d(0, marker_y); glVertex2d(
-            marker.transformed_quad_[5].x(), marker.transformed_quad_[5].y());
+          glTexCoord2d(0, 0);
+          glVertex2d(marker.transformed_quad_[3].x(),
+                     marker.transformed_quad_[3].y());
+          glTexCoord2d(marker_x, marker_y);
+          glVertex2d(marker.transformed_quad_[4].x(),
+                     marker.transformed_quad_[4].y());
+          glTexCoord2d(0, marker_y);
+          glVertex2d(marker.transformed_quad_[5].x(),
+                     marker.transformed_quad_[5].y());
 
           glEnd();
 
@@ -513,25 +486,27 @@ void TexturedMarkerPlugin::Draw(double x, double y, double scale)
   }
 }
 
-void TexturedMarkerPlugin::Transform()
-{
+void TexturedMarkerPlugin::Transform() {
   std::map<std::string, std::map<int, MarkerData>>::iterator nsIter;
   for (nsIter = markers_.begin(); nsIter != markers_.end(); ++nsIter) {
     std::map<int, MarkerData>::iterator markerIter;
-    for (markerIter = nsIter->second.begin(); markerIter != nsIter->second.end(); ++markerIter) {
+    for (markerIter = nsIter->second.begin();
+         markerIter != nsIter->second.end(); ++markerIter) {
       swri_transform_util::Transform transform;
-      if (GetTransform(markerIter->second.source_frame_, markerIter->second.stamp, transform)) {
+      if (GetTransform(markerIter->second.source_frame_,
+                       markerIter->second.stamp, transform)) {
         markerIter->second.transformed_quad_.clear();
         for (size_t i = 0; i < markerIter->second.quad_.size(); i++) {
-          markerIter->second.transformed_quad_.push_back(transform * markerIter->second.quad_[i]);
+          markerIter->second.transformed_quad_.push_back(
+              transform * markerIter->second.quad_[i]);
         }
       }
     }
   }
 }
 
-void TexturedMarkerPlugin::LoadConfig(const YAML::Node & node, const std::string & path)
-{
+void TexturedMarkerPlugin::LoadConfig(const YAML::Node& node,
+                                      const std::string& path) {
   LoadQosConfig(node, qos_);
   if (node["topic"]) {
     std::string topic = TrimString(node["topic"].as<std::string>());
@@ -541,11 +516,11 @@ void TexturedMarkerPlugin::LoadConfig(const YAML::Node & node, const std::string
   TopicEdited();
 }
 
-void TexturedMarkerPlugin::SaveConfig(YAML::Emitter & emitter, const std::string & path)
-{
+void TexturedMarkerPlugin::SaveConfig(YAML::Emitter& emitter,
+                                      const std::string& path) {
   std::string topic = TrimString(ui_.topic->text().toStdString());
   emitter << YAML::Key << "topic" << YAML::Value << topic;
 
   SaveQosConfig(emitter, qos_);
 }
-}   // namespace mapviz_plugins
+}  // namespace mapviz_plugins

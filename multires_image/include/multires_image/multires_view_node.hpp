@@ -35,48 +35,46 @@
 #include <thread>
 
 // QT libraries
+#include <QLabel>
 #include <QMainWindow>
 #include <QMouseEvent>
-#include <QLabel>
 #include <QShowEvent>
 
 // ROS libraries
-#include <rclcpp/rclcpp.hpp>
-
 #include <multires_image/QGLMap.hpp>
 #include <multires_image/tile_set.hpp>
+#include <rclcpp/rclcpp.hpp>
 
-namespace multires_image
-{
-  class MultiresViewNode : public QMainWindow
-  {
-    Q_OBJECT
+namespace multires_image {
+class MultiresViewNode : public QMainWindow {
+  Q_OBJECT
 
-  public:
-    MultiresViewNode(int argc, char **argv, QWidget *parent = 0, Qt::WindowFlags flags = Qt::WindowFlags());
-    ~MultiresViewNode() override = default;
+ public:
+  MultiresViewNode(int argc, char** argv, QWidget* parent = 0,
+                   Qt::WindowFlags flags = Qt::WindowFlags());
+  ~MultiresViewNode() override = default;
 
-    virtual void showEvent(QShowEvent* event) override;
+  virtual void showEvent(QShowEvent* event) override;
 
-    void Initialize();
+  void Initialize();
 
-    void Spin();
+  void Spin();
 
-  private:
-    void SpinLoop();
+ private:
+  void SpinLoop();
 
-    int argc_;
-    char** argv_;
+  int argc_;
+  char** argv_;
 
-    rclcpp::Node::SharedPtr node_;
-    std::thread*  thread_;
+  rclcpp::Node::SharedPtr node_;
+  std::thread* thread_;
 
-    bool initialized_;
+  bool initialized_;
 
-    std::string image_path_;
+  std::string image_path_;
 
-    TileSet* tile_set_;
-  };
-}
+  TileSet* tile_set_;
+};
+}  // namespace multires_image
 
 #endif  // MULTIRES_IMAGE_MULTIRES_VIEW_NODE_HPP_

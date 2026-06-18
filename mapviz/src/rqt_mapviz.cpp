@@ -28,39 +28,29 @@
 // *****************************************************************************
 
 #include "mapviz/rqt_mapviz.hpp"
+
 #include <pluginlib/class_list_macros.hpp>
 
-namespace mapviz
-{
+namespace mapviz {
 
-  RqtMapviz::RqtMapviz() :
-    widget_(nullptr)
-  {
-    setObjectName("RqtMapviz");
-  }
+RqtMapviz::RqtMapviz() : widget_(nullptr) { setObjectName("RqtMapviz"); }
 
-  void RqtMapviz::initPlugin(qt_gui_cpp::PluginContext& context)
-  {
-    // The plugin class doesn't really do very much -- just start Mapviz
-    // and add it to the context.
-    widget_ = new Mapviz(false, 0, nullptr);
-    widget_->setWindowFlags(Qt::Widget);
-    context.addWidget(widget_);
-  }
+void RqtMapviz::initPlugin(qt_gui_cpp::PluginContext& context) {
+  // The plugin class doesn't really do very much -- just start Mapviz
+  // and add it to the context.
+  widget_ = new Mapviz(false, 0, nullptr);
+  widget_->setWindowFlags(Qt::Widget);
+  context.addWidget(widget_);
+}
 
-  void RqtMapviz::shutdownPlugin()
-  {
-  }
+void RqtMapviz::shutdownPlugin() {}
 
-  void RqtMapviz::saveSettings(qt_gui_cpp::Settings& plugin_settings,
-                               qt_gui_cpp::Settings& instance_settings) const
-  {
-  }
+void RqtMapviz::saveSettings(qt_gui_cpp::Settings& plugin_settings,
+                             qt_gui_cpp::Settings& instance_settings) const {}
 
-  void RqtMapviz::restoreSettings(const qt_gui_cpp::Settings& plugin_settings,
-                                  const qt_gui_cpp::Settings& instance_settings)
-  {
-  }
-}   // namespace mapviz
+void RqtMapviz::restoreSettings(const qt_gui_cpp::Settings& plugin_settings,
+                                const qt_gui_cpp::Settings& instance_settings) {
+}
+}  // namespace mapviz
 
 PLUGINLIB_EXPORT_CLASS(mapviz::RqtMapviz, rqt_gui_cpp::Plugin)

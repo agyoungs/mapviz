@@ -31,13 +31,11 @@
 #ifndef MAPVIZ__SELECT_SERVICE_DIALOG_HPP_
 #define MAPVIZ__SELECT_SERVICE_DIALOG_HPP_
 
-#include <rclcpp/rclcpp.hpp>
-
 #include <QDialog>
 #include <QMetaType>
 #include <QThread>
-
 #include <memory>
+#include <rclcpp/rclcpp.hpp>
 #include <set>
 #include <string>
 #include <vector>
@@ -48,37 +46,30 @@ class QListWidget;
 class QPushButton;
 QT_END_NAMESPACE
 
-// This is ugly, but necessary in order to be able to send a std::vector<std::string>
-// via a queued signal/slot connection.
+// This is ugly, but necessary in order to be able to send a
+// std::vector<std::string> via a queued signal/slot connection.
 typedef std::vector<std::string> ServiceStringVector;
 Q_DECLARE_METATYPE(ServiceStringVector)
 
-namespace mapviz
-{
+namespace mapviz {
 /**
- * Enumerating services requires making a remote service call; doing this in the GUI thread
- * could cause Mapviz to block and become unresponsive, so it is offloaded to another thread.
+ * Enumerating services requires making a remote service call; doing this in the
+ * GUI thread could cause Mapviz to block and become unresponsive, so it is
+ * offloaded to another thread.
  */
-class ServiceUpdaterThread : public QThread
-{
+class ServiceUpdaterThread : public QThread {
   Q_OBJECT
-public:
-  ServiceUpdaterThread(
-    const std::shared_ptr<rclcpp::Node>& nh,
-    const std::string& allowed_datatype,
-    QObject* parent) :
-    QThread(parent),
-    nh_(nh),
-    allowed_datatype_(allowed_datatype)
-  {
-  }
+ public:
+  ServiceUpdaterThread(const std::shared_ptr<rclcpp::Node>& nh,
+                       const std::string& allowed_datatype, QObject* parent)
+      : QThread(parent), nh_(nh), allowed_datatype_(allowed_datatype) {}
   void run() override;
 
-Q_SIGNALS:
+ Q_SIGNALS:
   void servicesFetched(ServiceStringVector services);
   void fetchingFailed(const QString error_msg);
 
-private:
+ private:
   std::shared_ptr<rclcpp::Node> nh_;
   const std::string& allowed_datatype_;
 };
@@ -87,31 +78,33 @@ private:
  * Provides a dialog that the user can use to either list all known ROS services
  * or all ROS services that handle a particular type.
  */
-class SelectServiceDialog : public QDialog
-{
+class SelectServiceDialog : public QDialog {
   Q_OBJECT
-public:
+ public:
   /**
-   * Convenience function for creating a dialog that will prompt the user to select
-   * a service and then return the value.  If no service was selected, the returned
-   * value will be empty.
-   * @param[in] datatype The type of service to search for; if empty, it will show
-   *                     the user a list of all services.
+   * Convenience function for creating a dialog that will prompt the user to
+   * select a service and then return the value.  If no service was selected,
+   * the returned value will be empty.
+   * @param[in] datatype The type of service to search for; if empty, it will
+   * show the user a list of all services.
    * @param[in] parent The dialog's parent widget.
-   * @return The name of the selected service, or an empty string if there was none.
+   * @return The name of the selected service, or an empty string if there was
+   * none.
    */
-  static std::string selectService(rclcpp::Node::SharedPtr node, const std::string& datatype, QWidget* parent = 0);
+  static std::string selectService(rclcpp::Node::SharedPtr node,
+                                   const std::string& datatype,
+                                   QWidget* parent = 0);
 
   /**
    * Constructs a new SelectServiceDialog and automatically starts a timer that
    * will refresh the list of services every 5 seconds.
-   * @param[in] datatype The type of service to search for; if empty, it will show
-   *                     the user a list of all services.
+   * @param[in] datatype The type of service to search for; if empty, it will
+   * show the user a list of all services.
    * @param[in] parent The dialog's parent widget.
    */
   explicit SelectServiceDialog(const rclcpp::Node::SharedPtr& node,
-      const std::string& datatype = "",
-      QWidget* parent = nullptr);
+                               const std::string& datatype = "",
+                               QWidget* parent = nullptr);
   ~SelectServiceDialog() override;
 
   /**
@@ -129,7 +122,7 @@ public:
    */
   std::string selectedService() const;
 
-private Q_SLOTS:
+ private Q_SLOTS:
   /**
    * If no worker thread is currently active, this will start a worker thread
    * that will fetch all of the services matching the known data type.
@@ -150,10 +143,10 @@ private Q_SLOTS:
    */
   void displayUpdateError(const QString&);
 
-private:
+ private:
   std::vector<std::string> filterServices();
-  void timerEvent(QTimerEvent *) override;
-  void closeEvent(QCloseEvent *) override;
+  void timerEvent(QTimerEvent*) override;
+  void closeEvent(QCloseEvent*) override;
 
   std::shared_ptr<rclcpp::Node> nh_;
 
@@ -163,12 +156,12 @@ private:
 
   int fetch_services_timer_id_;
 
-  QPushButton *cancel_button_;
-  QListWidget *list_widget_;
-  QLineEdit *name_filter_;
-  QPushButton *ok_button_;
+  QPushButton* cancel_button_;
+  QListWidget* list_widget_;
+  QLineEdit* name_filter_;
+  QPushButton* ok_button_;
   std::shared_ptr<ServiceUpdaterThread> worker_thread_;
 };
-}   //  namespace mapviz
+}  //  namespace mapviz
 
-#endif   //  MAPVIZ__SELECT_SERVICE_DIALOG_HPP_
+#endif  //  MAPVIZ__SELECT_SERVICE_DIALOG_HPP_

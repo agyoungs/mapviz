@@ -31,36 +31,30 @@
 #ifndef TILE_MAP_STADIA_SOURCE_H
 #define TILE_MAP_STADIA_SOURCE_H
 
+#include <QString>
+#include <string>
 #include <tile_map/tile_source.hpp>
 
-#include <string>
-
-#include <QString>
-
-namespace tile_map
-{
-  class StadiaSource : public TileSource
-  {
+namespace tile_map {
+class StadiaSource : public TileSource {
   Q_OBJECT
-  public:
-    explicit StadiaSource(const QString& name,
-                          const QString& base_url,
-                          bool is_custom,
-                          int32_t max_zoom);
+ public:
+  explicit StadiaSource(const QString& name, const QString& base_url,
+                        bool is_custom, int32_t max_zoom);
 
-    size_t GenerateTileHash(int32_t level, int64_t x, int64_t y) override;
-    QString GenerateTileUrl(int32_t level, int64_t x, int64_t y) override;
-    QString GetType() const override;
+  size_t GenerateTileHash(int32_t level, int64_t x, int64_t y) override;
+  QString GenerateTileUrl(int32_t level, int64_t x, int64_t y) override;
+  QString GetType() const override;
 
-    QString GetApiKey() const;
-    void SetApiKey(const QString& api_key);
+  QString GetApiKey() const;
+  void SetApiKey(const QString& api_key);
 
-    static const QString STADIA_TYPE;
+  static const QString STADIA_TYPE;
 
-  private:
-    std::hash<std::string> hash_;
-    QString api_key_;
-  };
-}
+ private:
+  std::hash<std::string> hash_;
+  QString api_key_;
+};
+}  // namespace tile_map
 
-#endif //TILE_MAP_STADIA_SOURCE_H
+#endif  // TILE_MAP_STADIA_SOURCE_H

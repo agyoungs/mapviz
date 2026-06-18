@@ -30,11 +30,10 @@
 #ifndef MAPVIZ__COLOR_BUTTON_HPP_
 #define MAPVIZ__COLOR_BUTTON_HPP_
 
-#include <QPushButton>
 #include <QColor>
+#include <QPushButton>
 
-namespace mapviz
-{
+namespace mapviz {
 /**
  * The ColorButton widget provides a color display that the user can
  * click on to select a new color.  You can use this widget in Qt
@@ -46,8 +45,7 @@ namespace mapviz
  * Include file name: mapviz/color_button.h
  * Global Include: True
  */
-class ColorButton : public QPushButton
-{
+class ColorButton : public QPushButton {
   Q_OBJECT
 
   QColor color_;
@@ -55,7 +53,7 @@ class ColorButton : public QPushButton
  public:
   explicit ColorButton(QWidget *parent = 0);
 
-  const QColor& color() const { return color_; }
+  const QColor &color() const { return color_; }
 
  Q_SIGNALS:
   // Emitted when the color is changed by user interaction.
@@ -63,10 +61,10 @@ class ColorButton : public QPushButton
   // Emitted when the color is changed by user interaction or programatically.
   void colorChanged(const QColor &color);
 
-  public Q_SLOTS:
+ public Q_SLOTS:
   void setColor(const QColor &color);
 
-  private Q_SLOTS:
+ private Q_SLOTS:
   void handleClicked();
 };  // class ColorButton
 }  // namespace mapviz

@@ -42,25 +42,23 @@
  * from firing a click event.  By default, "clicks" that take longer than 500ms
  * or move longer than 2 pixels are ignored.
  */
-namespace mapviz_plugins
-{
-class CanvasClickFilter : public QObject
-{
+namespace mapviz_plugins {
+class CanvasClickFilter : public QObject {
   Q_OBJECT
 
-public:
+ public:
   CanvasClickFilter();
 
   void setMaxClickTime(qint64 max_ms);
   void setMaxClickMovement(qreal max_distance);
 
-Q_SIGNALS:
+ Q_SIGNALS:
   void pointClicked(const QPointF&);
 
-protected:
-  bool eventFilter(QObject *object, QEvent* event) override;
+ protected:
+  bool eventFilter(QObject* object, QEvent* event) override;
 
-private:
+ private:
   bool is_mouse_down_;
   QPointF mouse_down_pos_;
   qint64 mouse_down_time_;
@@ -68,6 +66,6 @@ private:
   qint64 max_ms_;
   qreal max_distance_;
 };
-}   // namespace mapviz_plugins
+}  // namespace mapviz_plugins
 
 #endif  // MAPVIZ_PLUGINS__CANVAS_CLICK_FILTER_HPP_

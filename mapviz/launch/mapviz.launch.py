@@ -12,16 +12,17 @@ def generate_launch_description():
         on_exit=launch.actions.Shutdown(),
     )
 
-    return launch.LaunchDescription([
-        mapviz_node,
-        launch_ros.actions.Node(
-            package="swri_transform_util",
-            executable="initialize_origin.py",
-            name="initialize_origin",
-            parameters=[
-                {"local_xy_frame": "map"},
-                {"local_xy_origin": "swri"},
-                {"local_xy_origins": """[
+    return launch.LaunchDescription(
+        [
+            mapviz_node,
+            launch_ros.actions.Node(
+                package="swri_transform_util",
+                executable="initialize_origin.py",
+                name="initialize_origin",
+                parameters=[
+                    {"local_xy_frame": "map"},
+                    {"local_xy_origin": "swri"},
+                    {"local_xy_origins": """[
                     {"name": "swri",
                         "latitude": 29.45196669,
                         "longitude": -98.61370577,
@@ -33,12 +34,13 @@ def generate_launch_description():
                         "altitude": 200.0,
                         "heading": 0.0}
                 ]"""},
-            ]
-        ),
-        launch_ros.actions.Node(
-            package="tf2_ros",
-            executable="static_transform_publisher",
-            name="swri_transform",
-            arguments=["0", "0", "0", "0", "0", "0", "map", "origin"]
-        )
-    ])
+                ],
+            ),
+            launch_ros.actions.Node(
+                package="tf2_ros",
+                executable="static_transform_publisher",
+                name="swri_transform",
+                arguments=["0", "0", "0", "0", "0", "0", "map", "origin"],
+            ),
+        ]
+    )

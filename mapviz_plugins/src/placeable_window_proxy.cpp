@@ -27,79 +27,60 @@
 //
 // *****************************************************************************
 
-#include <mapviz_plugins/placeable_window_proxy.hpp>
-
 #include <QApplication>
 #include <QCursor>
+#include <QDebug>
 #include <QLine>
 #include <QMouseEvent>
 #include <QResizeEvent>
 #include <QTimerEvent>
 #include <QWidget>
-
-#include <QDebug>
-
 #include <cmath>
+#include <mapviz_plugins/placeable_window_proxy.hpp>
 
-namespace mapviz_plugins
-{
+namespace mapviz_plugins {
 PlaceableWindowProxy::PlaceableWindowProxy()
-  : QObject()
-  , target_(nullptr)
-  , visible_(true)
-  , has_cursor_(false)
-  , state_(INACTIVE)
-  , win_resize_timer_(-1)
-{
-}
+    : QObject(),
+      target_(nullptr),
+      visible_(true),
+      has_cursor_(false),
+      state_(INACTIVE),
+      win_resize_timer_(-1) {}
 
-PlaceableWindowProxy::~PlaceableWindowProxy()
-{
-  if (target_)
-  {
+PlaceableWindowProxy::~PlaceableWindowProxy() {
+  if (target_) {
     target_->removeEventFilter(this);
   }
 }
 
-void PlaceableWindowProxy::setContainer(QWidget *target)
-{
-  if (target_)
-  {
+void PlaceableWindowProxy::setContainer(QWidget *target) {
+  if (target_) {
     target_->removeEventFilter(this);
   }
 
   target_ = target;
 
-  if (target_)
-  {
+  if (target_) {
     target_->installEventFilter(this);
   }
 }
 
-QRect PlaceableWindowProxy::rect() const
-{
-  return rect_.toRect();
-}
+QRect PlaceableWindowProxy::rect() const { return rect_.toRect(); }
 
-void PlaceableWindowProxy::setRect(const QRect &rect)
-{
+void PlaceableWindowProxy::setRect(const QRect &rect) {
   rect_ = QRectF(rect);
   state_ = INACTIVE;
 }
 
-void PlaceableWindowProxy::setVisible(bool visible)
-{
-  if (visible == visible_)
-  {
+void PlaceableWindowProxy::setVisible(bool visible) {
+  if (visible == visible_) {
     return;
   }
 
   visible_ = visible;
 
-  if (!visible_ && state_ != INACTIVE)
-  {
-    if (has_cursor_)
-    {
+  if (!visible_ && state_ != INACTIVE) {
+    if (has_cursor_) {
       QApplication::restoreOverrideCursor();
       has_cursor_ = false;
     }
@@ -107,57 +88,48 @@ void PlaceableWindowProxy::setVisible(bool visible)
   }
 }
 
-bool PlaceableWindowProxy::eventFilter(QObject *, QEvent *event)
-{
+bool PlaceableWindowProxy::eventFilter(QObject *, QEvent *event) {
   // This should never happen, but doesn't hurt to be defensive.
-  if (!target_)
-  {
+  if (!target_) {
     return false;
   }
 
-  if (!visible_)
-  {
+  if (!visible_) {
     return false;
   }
 
-  switch (event->type())
-  {
-  case QEvent::MouseButtonPress:
-    return handleMousePress(dynamic_cast<QMouseEvent*>(event));
-  case QEvent::MouseButtonRelease:
-    return handleMouseRelease(dynamic_cast<QMouseEvent*>(event));
-  case QEvent::MouseMove:
-    return handleMouseMove(dynamic_cast<QMouseEvent*>(event));
-  case QEvent::Resize:
-    return handleResize(dynamic_cast<QResizeEvent*>(event));
-  default:
-    return false;
+  switch (event->type()) {
+    case QEvent::MouseButtonPress:
+      return handleMousePress(dynamic_cast<QMouseEvent *>(event));
+    case QEvent::MouseButtonRelease:
+      return handleMouseRelease(dynamic_cast<QMouseEvent *>(event));
+    case QEvent::MouseMove:
+      return handleMouseMove(dynamic_cast<QMouseEvent *>(event));
+    case QEvent::Resize:
+      return handleResize(dynamic_cast<QResizeEvent *>(event));
+    default:
+      return false;
   }
 }
 
-bool PlaceableWindowProxy::handleMousePress(QMouseEvent *event)
-{
-  if (!visible_)
-  {
+bool PlaceableWindowProxy::handleMousePress(QMouseEvent *event) {
+  if (!visible_) {
     return false;
   }
 
-  if (!rect_.contains(event->pos()))
-  {
+  if (!rect_.contains(event->pos())) {
     // We don't care about anything outside the rect.
-     return false;
+    return false;
   }
 
-  if (state_ != INACTIVE)
-  {
+  if (state_ != INACTIVE) {
     // We're already doing something, so we don't want to enter
     // another state.  But we also don't want someone else to start
     // doing something, so we filter out the press.
     return true;
   }
 
-  if (event->button() == Qt::LeftButton)
-  {
+  if (event->button() == Qt::LeftButton) {
     start_rect_ = rect_;
     start_point_ = event->pos();
     state_ = getNextState(event->localPos());
@@ -170,20 +142,16 @@ bool PlaceableWindowProxy::handleMousePress(QMouseEvent *event)
   return true;
 }
 
-bool PlaceableWindowProxy::handleMouseRelease(QMouseEvent *event)
-{
-  if (!visible_)
-  {
+bool PlaceableWindowProxy::handleMouseRelease(QMouseEvent *event) {
+  if (!visible_) {
     return false;
   }
 
-  if (state_ == INACTIVE)
-  {
+  if (state_ == INACTIVE) {
     return false;
   }
 
-  if (event->button() == Qt::LeftButton)
-  {
+  if (event->button() == Qt::LeftButton) {
     state_ = INACTIVE;
     return true;
   }
@@ -191,19 +159,14 @@ bool PlaceableWindowProxy::handleMouseRelease(QMouseEvent *event)
   return false;
 }
 
-bool PlaceableWindowProxy::handleMouseMove(QMouseEvent *event)
-{
-  if (!visible_)
-  {
+bool PlaceableWindowProxy::handleMouseMove(QMouseEvent *event) {
+  if (!visible_) {
     return false;
   }
 
-  if (state_ == INACTIVE)
-  {
-    if (!rect_.contains(event->localPos()))
-    {
-      if (has_cursor_)
-      {
+  if (state_ == INACTIVE) {
+    if (!rect_.contains(event->localPos())) {
+      if (has_cursor_) {
         QApplication::restoreOverrideCursor();
         has_cursor_ = false;
       }
@@ -214,22 +177,20 @@ bool PlaceableWindowProxy::handleMouseMove(QMouseEvent *event)
     // cursor to indicate the state the user would enter by clicking.
 
     Qt::CursorShape shape;
-    switch(getNextState(event->localPos()))
-    {
-    case MOVE_TOP_LEFT:
-    case MOVE_BOTTOM_RIGHT:
-      shape = Qt::SizeFDiagCursor;
-      break;
-    case MOVE_TOP_RIGHT:
-    case MOVE_BOTTOM_LEFT:
-      shape = Qt::SizeBDiagCursor;
-      break;
-    default:
-      shape = Qt::SizeAllCursor;
+    switch (getNextState(event->localPos())) {
+      case MOVE_TOP_LEFT:
+      case MOVE_BOTTOM_RIGHT:
+        shape = Qt::SizeFDiagCursor;
+        break;
+      case MOVE_TOP_RIGHT:
+      case MOVE_BOTTOM_LEFT:
+        shape = Qt::SizeBDiagCursor;
+        break;
+      default:
+        shape = Qt::SizeAllCursor;
     }
 
-    if (has_cursor_)
-    {
+    if (has_cursor_) {
       QApplication::changeOverrideCursor(QCursor(shape));
     } else {
       QApplication::setOverrideCursor(QCursor(shape));
@@ -242,32 +203,23 @@ bool PlaceableWindowProxy::handleMouseMove(QMouseEvent *event)
   QPointF dp = event->localPos() - start_point_;
 
   // todo: enforce minimum size & constrain aspect ratio for resizes.
-  if (state_ == MOVE_ALL)
-  {
+  if (state_ == MOVE_ALL) {
     rect_ = start_rect_.translated(dp);
   } else if (state_ == MOVE_TOP_LEFT) {
-    rect_ = resizeHelper(start_rect_,
-                        start_rect_.bottomRight(),
-                        start_rect_.topLeft(),
-                        event->localPos());
+    rect_ = resizeHelper(start_rect_, start_rect_.bottomRight(),
+                         start_rect_.topLeft(), event->localPos());
     rect_.moveBottomRight(start_rect_.bottomRight());
   } else if (state_ == MOVE_BOTTOM_LEFT) {
-    rect_ = resizeHelper(start_rect_,
-                        start_rect_.topRight(),
-                        start_rect_.bottomLeft(),
-                        event->localPos());
+    rect_ = resizeHelper(start_rect_, start_rect_.topRight(),
+                         start_rect_.bottomLeft(), event->localPos());
     rect_.moveTopRight(start_rect_.topRight());
   } else if (state_ == MOVE_BOTTOM_RIGHT) {
-    rect_ = resizeHelper(start_rect_,
-                        start_rect_.topLeft(),
-                        start_rect_.bottomRight(),
-                        event->localPos());
+    rect_ = resizeHelper(start_rect_, start_rect_.topLeft(),
+                         start_rect_.bottomRight(), event->localPos());
     rect_.moveTopLeft(start_rect_.topLeft());
   } else if (state_ == MOVE_TOP_RIGHT) {
-    rect_ = resizeHelper(start_rect_,
-                        start_rect_.bottomLeft(),
-                        start_rect_.topRight(),
-                        event->localPos());
+    rect_ = resizeHelper(start_rect_, start_rect_.bottomLeft(),
+                         start_rect_.topRight(), event->localPos());
     rect_.moveBottomLeft(start_rect_.bottomLeft());
   } else {
     qWarning("Unhandled state in PlaceableWindowProxy: %d", state_);
@@ -276,20 +228,16 @@ bool PlaceableWindowProxy::handleMouseMove(QMouseEvent *event)
   return true;
 }
 
-QRectF PlaceableWindowProxy::resizeHelper(const QRectF &rect,
-                                          const QPointF &p1,
+QRectF PlaceableWindowProxy::resizeHelper(const QRectF &rect, const QPointF &p1,
                                           const QPointF &p2,
-                                          const QPointF &p3) const
-{
+                                          const QPointF &p3) const {
   QPointF v1 = p2 - p1;
   QPointF v2 = p3 - p1;
 
-  double d = v1.x()*v2.y() - v1.y()*v2.x();
-  if (d < 0)
-  {
+  double d = v1.x() * v2.y() - v1.y() * v2.x();
+  if (d < 0) {
     double new_width = std::abs(p3.x() - p1.x());
-    if (new_width < 10)
-    {
+    if (new_width < 10) {
       new_width = 10;
     }
 
@@ -297,8 +245,7 @@ QRectF PlaceableWindowProxy::resizeHelper(const QRectF &rect,
     return QRectF(0, 0, new_width, new_height);
   } else {
     double new_height = std::abs(p3.y() - p1.y());
-    if (new_height < 10)
-    {
+    if (new_height < 10) {
       new_height = 10;
     }
 
@@ -307,39 +254,28 @@ QRectF PlaceableWindowProxy::resizeHelper(const QRectF &rect,
   }
 }
 
-
-bool PlaceableWindowProxy::handleResize(QResizeEvent *event)
-{
+bool PlaceableWindowProxy::handleResize(QResizeEvent *event) {
   // We always want to pass the resize event along to other widgets.
   return false;
 }
 
-void PlaceableWindowProxy::timerEvent(QTimerEvent *event)
-{
-  if (event->timerId() == win_resize_timer_)
-  {
+void PlaceableWindowProxy::timerEvent(QTimerEvent *event) {
+  if (event->timerId() == win_resize_timer_) {
     killTimer(win_resize_timer_);
     win_resize_timer_ = -1;
-    if (target_)
-    {
+    if (target_) {
       winResize(target_->size());
     }
   }
 }
 
-void PlaceableWindowProxy::rectResize(int dx, int dy)
-{
-}
+void PlaceableWindowProxy::rectResize(int dx, int dy) {}
 
-void PlaceableWindowProxy::winResize(const QSize &size)
-{
-}
+void PlaceableWindowProxy::winResize(const QSize &size) {}
 
 PlaceableWindowProxy::State PlaceableWindowProxy::getNextState(
-  const QPointF &pt) const
-{
-  if (!rect_.contains(pt))
-  {
+    const QPointF &pt) const {
+  if (!rect_.contains(pt)) {
     return INACTIVE;
   }
 
@@ -349,8 +285,7 @@ PlaceableWindowProxy::State PlaceableWindowProxy::getNextState(
   bool near_right = std::fabs(rect_.right() - pt.x()) < threshold;
   bool near_bottom = std::fabs(rect_.bottom() - pt.y()) < threshold;
 
-  if (near_top && near_left)
-  {
+  if (near_top && near_left) {
     return MOVE_TOP_LEFT;
   } else if (near_top && near_right) {
     return MOVE_TOP_RIGHT;

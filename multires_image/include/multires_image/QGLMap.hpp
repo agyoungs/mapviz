@@ -31,81 +31,78 @@
 #define MULTIRES_IMAGE_QGLMAP_HPP_
 
 // QT libraries
+#include <QMouseEvent>
 #include <QOpenGLFunctions_1_1>
 #include <QOpenGLWidget>
-#include <QMouseEvent>
 #include <QWheelEvent>
 
 // QT auto-generated headers
-#include "ui_QGLMap.h"
-
-#include <tf2/transform_datatypes.hpp>
-
 #include <multires_image/tile.hpp>
 #include <multires_image/tile_view.hpp>
+#include <tf2/transform_datatypes.hpp>
 
-namespace multires_image
-{
-  class QGLMap : public QOpenGLWidget, protected QOpenGLFunctions_1_1
-  {
-    Q_OBJECT
+#include "ui_QGLMap.h"
 
-  public:
-    explicit QGLMap(QWidget *parent = 0);
-    ~QGLMap() override = default;
+namespace multires_image {
+class QGLMap : public QOpenGLWidget, protected QOpenGLFunctions_1_1 {
+  Q_OBJECT
 
-    void Exit();
-    void UpdateView();
-    void SetTiles(TileSet* tiles);
+ public:
+  explicit QGLMap(QWidget* parent = 0);
+  ~QGLMap() override = default;
 
-    tf2::Vector3 SceneCenter() { return m_scene_center; }
-    tf2::Vector3 ViewCenter() { return m_view_center; }
+  void Exit();
+  void UpdateView();
+  void SetTiles(TileSet* tiles);
 
-  signals:
-    void SignalZoomChange(double z);
-    void SignalViewChange(double x1, double y1, double x2, double y2);
-    void SignalMemorySize(int64_t bytes);
+  tf2::Vector3 SceneCenter() { return m_scene_center; }
+  tf2::Vector3 ViewCenter() { return m_view_center; }
 
-  public slots:
-    void LoadTexture(Tile* tile);
-    void DeleteTexture(Tile* tile);
-    void ChangeCenter(double x, double y);
-    void SetTextureMemory(int64_t bytes);
+ signals:
+  void SignalZoomChange(double z);
+  void SignalViewChange(double x1, double y1, double x2, double y2);
+  void SignalMemorySize(int64_t bytes);
 
-  protected:
-    void initializeGL() override;
-    void resizeGL(int w, int h) override;
-    void paintGL() override;
-    void mousePressEvent(QMouseEvent* e) override;
-    void mouseDoubleClickEvent(QMouseEvent* e) override;
-    void mouseReleaseEvent(QMouseEvent* e) override;
-    void mouseMoveEvent(QMouseEvent* e) override;
-    void wheelEvent(QWheelEvent* e) override;
+ public slots:
+  void LoadTexture(Tile* tile);
+  void DeleteTexture(Tile* tile);
+  void ChangeCenter(double x, double y);
+  void SetTextureMemory(int64_t bytes);
 
-  private:
-    Ui::QGLMapClass ui;
+ protected:
+  void initializeGL() override;
+  void resizeGL(int w, int h) override;
+  void paintGL() override;
+  void mousePressEvent(QMouseEvent* e) override;
+  void mouseDoubleClickEvent(QMouseEvent* e) override;
+  void mouseReleaseEvent(QMouseEvent* e) override;
+  void mouseMoveEvent(QMouseEvent* e) override;
+  void wheelEvent(QWheelEvent* e) override;
 
-    bool            m_initialized;
+ private:
+  Ui::QGLMapClass ui;
 
-    double          m_scale;
+  bool m_initialized;
 
-    bool            m_mouseDown;
-    int             m_mouseDownX;
-    int             m_mouseDownY;
+  double m_scale;
 
-    TileView*       m_tileView;
+  bool m_mouseDown;
+  int m_mouseDownX;
+  int m_mouseDownY;
 
-    tf2::Vector3 m_view_top_left;
-    tf2::Vector3 m_view_bottom_right;
-    tf2::Vector3 m_view_center;
+  TileView* m_tileView;
 
-    tf2::Vector3 m_scene_top_left;
-    tf2::Vector3 m_scene_bottom_right;
-    tf2::Vector3 m_scene_center;
+  tf2::Vector3 m_view_top_left;
+  tf2::Vector3 m_view_bottom_right;
+  tf2::Vector3 m_view_center;
 
-    void Recenter();
-    void MousePan(int x, int y);
-  };
-}
+  tf2::Vector3 m_scene_top_left;
+  tf2::Vector3 m_scene_bottom_right;
+  tf2::Vector3 m_scene_center;
+
+  void Recenter();
+  void MousePan(int x, int y);
+};
+}  // namespace multires_image
 
 #endif  // MULTIRES_IMAGE_QGLMAP_HPP_

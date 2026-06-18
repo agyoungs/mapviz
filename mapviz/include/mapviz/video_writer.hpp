@@ -33,7 +33,6 @@
 #include <QImage>
 #include <QObject>
 #include <QRecursiveMutex>
-
 #include <memory>
 #include <string>
 
@@ -41,26 +40,21 @@
 #include <opencv2/highgui/highgui.hpp>
 #endif
 
-namespace mapviz
-{
-class VideoWriter : public QObject
-{
+namespace mapviz {
+class VideoWriter : public QObject {
   Q_OBJECT
 
-public:
-  VideoWriter() :
-    height_(0),
-    width_(0)
-  {}
+ public:
+  VideoWriter() : height_(0), width_(0) {}
 
   bool initializeWriter(const std::string& directory, int width, int height);
   bool isRecording();
   void stop();
 
-public Q_SLOTS:
+ public Q_SLOTS:
   void processFrame(QImage frame);
 
-private:
+ private:
   int height_;
   int width_;
   QRecursiveMutex video_mutex_;

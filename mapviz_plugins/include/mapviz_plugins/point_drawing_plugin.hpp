@@ -30,13 +30,13 @@
 #ifndef MAPVIZ_PLUGINS__POINT_DRAWING_PLUGIN_HPP_
 #define MAPVIZ_PLUGINS__POINT_DRAWING_PLUGIN_HPP_
 
-#include <mapviz/mapviz_plugin.hpp>
 #include <mapviz/map_canvas.hpp>
+#include <mapviz/mapviz_plugin.hpp>
 
 // QT libraries
+#include <QObject>
 #include <QOpenGLFunctions_1_1>
 #include <QOpenGLWidget>
-#include <QObject>
 #include <QWidget>
 
 // ROS libraries
@@ -49,16 +49,14 @@
 #include <string>
 #include <vector>
 
-namespace mapviz_plugins
-{
-class PointDrawingPlugin : public mapviz::MapvizPlugin, protected QOpenGLFunctions_1_1
-{
+namespace mapviz_plugins {
+class PointDrawingPlugin : public mapviz::MapvizPlugin,
+                           protected QOpenGLFunctions_1_1 {
   Q_OBJECT
 
-  public:
-  struct StampedPoint
-  {
-    StampedPoint(): transformed(false) {}
+ public:
+  struct StampedPoint {
+    StampedPoint() : transformed(false) {}
 
     tf2::Vector3 point;
     tf2::Quaternion orientation;
@@ -74,12 +72,7 @@ class PointDrawingPlugin : public mapviz::MapvizPlugin, protected QOpenGLFunctio
     std::vector<tf2::Vector3> transformed_cov_points;
   };
 
-  enum DrawStyle
-  {
-    LINES = 0,
-    POINTS,
-    ARROWS
-  };
+  enum DrawStyle { LINES = 0, POINTS, ARROWS };
 
   PointDrawingPlugin();
   ~PointDrawingPlugin() override = default;
@@ -97,7 +90,7 @@ class PointDrawingPlugin : public mapviz::MapvizPlugin, protected QOpenGLFunctio
   virtual void UpdateColor(QColor base_color, int i);
   virtual void DrawCovariance();
 
-  protected Q_SLOTS:
+ protected Q_SLOTS:
   virtual void BufferSizeChanged(int value);
   void DrawIcon() override;
   virtual void SetColor(const QColor& color);
@@ -112,13 +105,13 @@ class PointDrawingPlugin : public mapviz::MapvizPlugin, protected QOpenGLFunctio
   void ResetTransformedPoints();
   void ClearPoints();
 
-  protected:
+ protected:
   void pushPoint(StampedPoint point);
   double bufferSize() const;
   double positionTolerance() const;
   const std::deque<StampedPoint>& points() const;
 
-  private:
+ private:
   int arrow_size_;
   DrawStyle draw_style_;
   StampedPoint cur_point_;
@@ -134,11 +127,11 @@ class PointDrawingPlugin : public mapviz::MapvizPlugin, protected QOpenGLFunctio
   double scale_;
   bool static_arrow_sizes_;
 
-  private:
+ private:
   std::vector<std::deque<StampedPoint> > laps_;
   bool got_begin_;
   tf2::Vector3 begin_;
 };
-}   // namespace mapviz_plugins
+}  // namespace mapviz_plugins
 
 #endif  // MAPVIZ_PLUGINS__POINT_DRAWING_PLUGIN_HPP_

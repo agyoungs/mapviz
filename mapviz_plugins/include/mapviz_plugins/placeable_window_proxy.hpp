@@ -30,8 +30,8 @@
 #define MAPVIZ_PLUGINS__PLACEABLE_WINDOW_PROXY_HPP_
 
 #include <QObject>
-#include <QRect>
 #include <QPoint>
+#include <QRect>
 
 QT_BEGIN_NAMESPACE;
 class QMouseEvent;
@@ -53,13 +53,11 @@ QT_END_NAMESPACE;
  * To do: Need to deactivate the proxy when the plugin is marked
  * invisible, or is not drawing data.
  */
-namespace mapviz_plugins
-{
-class PlaceableWindowProxy : public QObject
-{
-Q_OBJECT
+namespace mapviz_plugins {
+class PlaceableWindowProxy : public QObject {
+  Q_OBJECT
 
-public:
+ public:
   PlaceableWindowProxy();
   ~PlaceableWindowProxy() override;
 
@@ -67,14 +65,14 @@ public:
 
   QRect rect() const;
 
-Q_SIGNALS:
+ Q_SIGNALS:
   void rectChanged(const QRect &);
 
-public Q_SLOTS:
+ public Q_SLOTS:
   void setRect(const QRect &);
   void setVisible(bool visible);
 
-protected:
+ protected:
   bool eventFilter(QObject *object, QEvent *event) override;
 
   bool handleMousePress(QMouseEvent *);
@@ -87,14 +85,10 @@ protected:
   void rectResize(int dx, int dy);
   void winResize(const QSize &);
 
-  QRectF resizeHelper(const QRectF &rect,
-                      const QPointF &p1,
-                      const QPointF &p2,
+  QRectF resizeHelper(const QRectF &rect, const QPointF &p1, const QPointF &p2,
                       const QPointF &p3) const;
 
-
-
-private:
+ private:
   enum State {
     INACTIVE = 0,
     MOVE_ALL,

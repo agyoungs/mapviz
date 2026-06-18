@@ -26,31 +26,25 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 // *****************************************************************************
-#include <mapviz/select_frame_dialog.hpp>
-
 #include <tf2_ros/transform_listener.h>
 
-#include <QListWidget>
-#include <QLineEdit>
-#include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QPushButton>
 #include <QLabel>
+#include <QLineEdit>
+#include <QListWidget>
+#include <QPushButton>
 #include <QTimerEvent>
-
+#include <QVBoxLayout>
 #include <algorithm>
+#include <mapviz/select_frame_dialog.hpp>
 #include <memory>
 #include <set>
 #include <string>
 #include <vector>
 
-
-namespace mapviz
-{
+namespace mapviz {
 std::string SelectFrameDialog::selectFrame(
-    std::shared_ptr<tf2_ros::Buffer> tf_buffer,
-    QWidget *parent)
-{
+    std::shared_ptr<tf2_ros::Buffer> tf_buffer, QWidget *parent) {
   SelectFrameDialog dialog(tf_buffer, parent);
   dialog.allowMultipleFrames(false);
   if (dialog.exec() == QDialog::Accepted) {
@@ -61,9 +55,7 @@ std::string SelectFrameDialog::selectFrame(
 }
 
 std::vector<std::string> SelectFrameDialog::selectFrames(
-  std::shared_ptr<tf2_ros::Buffer> tf_buffer,
-  QWidget *parent)
-{
+    std::shared_ptr<tf2_ros::Buffer> tf_buffer, QWidget *parent) {
   SelectFrameDialog dialog(tf_buffer, parent);
   dialog.allowMultipleFrames(true);
   if (dialog.exec() == QDialog::Accepted) {
@@ -73,16 +65,14 @@ std::vector<std::string> SelectFrameDialog::selectFrames(
   }
 }
 
-SelectFrameDialog::SelectFrameDialog(
-  std::shared_ptr<tf2_ros::Buffer> tf_buffer,
-  QWidget *parent)
-  : QDialog(parent)
-  , tf_buf_(tf_buffer)
-  , ok_button_(new QPushButton("&Ok"))
-  , cancel_button_(new QPushButton("&Cancel"))
-  , list_widget_(new QListWidget())
-  , name_filter_(new QLineEdit())
-{
+SelectFrameDialog::SelectFrameDialog(std::shared_ptr<tf2_ros::Buffer> tf_buffer,
+                                     QWidget *parent)
+    : QDialog(parent),
+      tf_buf_(tf_buffer),
+      ok_button_(new QPushButton("&Ok")),
+      cancel_button_(new QPushButton("&Cancel")),
+      list_widget_(new QListWidget()),
+      name_filter_(new QLineEdit()) {
   QHBoxLayout *filter_box = new QHBoxLayout();
   filter_box->addWidget(new QLabel("Filter:"));
   filter_box->addWidget(name_filter_);
@@ -98,12 +88,10 @@ SelectFrameDialog::SelectFrameDialog(
   vbox->addLayout(button_box);
   setLayout(vbox);
 
-  connect(ok_button_, SIGNAL(clicked(bool)),
-          this, SLOT(accept()));
-  connect(cancel_button_, SIGNAL(clicked(bool)),
-          this, SLOT(reject()));
-  connect(name_filter_, SIGNAL(textChanged(const QString &)),
-          this, SLOT(updateDisplayedFrames()));
+  connect(ok_button_, SIGNAL(clicked(bool)), this, SLOT(accept()));
+  connect(cancel_button_, SIGNAL(clicked(bool)), this, SLOT(reject()));
+  connect(name_filter_, SIGNAL(textChanged(const QString &)), this,
+          SLOT(updateDisplayedFrames()));
 
   ok_button_->setDefault(true);
 
@@ -116,23 +104,19 @@ SelectFrameDialog::SelectFrameDialog(
   fetchFrames();
 }
 
-void SelectFrameDialog::timerEvent(QTimerEvent *event)
-{
+void SelectFrameDialog::timerEvent(QTimerEvent *event) {
   if (event->timerId() == fetch_frames_timer_id_) {
     fetchFrames();
   }
 }
 
-void SelectFrameDialog::closeEvent(QCloseEvent *event)
-{
+void SelectFrameDialog::closeEvent(QCloseEvent *event) {
   // We don't need to keep making requests from the ROS master.
   killTimer(fetch_frames_timer_id_);
   QDialog::closeEvent(event);
 }
 
-void SelectFrameDialog::allowMultipleFrames(
-  bool allow)
-{
+void SelectFrameDialog::allowMultipleFrames(bool allow) {
   if (allow) {
     list_widget_->setSelectionMode(QAbstractItemView::MultiSelection);
   } else {
@@ -140,8 +124,7 @@ void SelectFrameDialog::allowMultipleFrames(
   }
 }
 
-std::string SelectFrameDialog::selectedFrame() const
-{
+std::string SelectFrameDialog::selectedFrame() const {
   std::vector<std::string> selection = selectedFrames();
   if (selection.empty()) {
     return "";
@@ -150,9 +133,9 @@ std::string SelectFrameDialog::selectedFrame() const
   }
 }
 
-std::vector<std::string> SelectFrameDialog::selectedFrames() const
-{
-  QModelIndexList qt_selection = list_widget_->selectionModel()->selectedIndexes();
+std::vector<std::string> SelectFrameDialog::selectedFrames() const {
+  QModelIndexList qt_selection =
+      list_widget_->selectionModel()->selectedIndexes();
 
   std::vector<std::string> selection;
   selection.resize(qt_selection.size());
@@ -172,8 +155,7 @@ std::vector<std::string> SelectFrameDialog::selectedFrames() const
   return selection;
 }
 
-void SelectFrameDialog::fetchFrames()
-{
+void SelectFrameDialog::fetchFrames() {
   if (tf_buf_ == nullptr) {
     return;
   }
@@ -185,12 +167,11 @@ void SelectFrameDialog::fetchFrames()
 }
 
 std::vector<std::string> SelectFrameDialog::filterFrames(
-  const std::vector<std::string> &frames) const
-{
+    const std::vector<std::string> &frames) const {
   QString frame_filter = name_filter_->text();
   std::vector<std::string> filtered;
 
-  for (const auto & frame : frames) {
+  for (const auto &frame : frames) {
     QString frame_name = QString::fromStdString(frame);
     if (!frame_filter.isEmpty() &&
         !frame_name.contains(frame_filter, Qt::CaseInsensitive)) {
@@ -203,8 +184,7 @@ std::vector<std::string> SelectFrameDialog::filterFrames(
   return filtered;
 }
 
-void SelectFrameDialog::updateDisplayedFrames()
-{
+void SelectFrameDialog::updateDisplayedFrames() {
   std::vector<std::string> next_displayed_frames = filterFrames(known_frames_);
 
   // It's a lot more work to keep track of the additions/removals like
@@ -219,13 +199,13 @@ void SelectFrameDialog::updateDisplayedFrames()
   next_names.insert(next_displayed_frames.begin(), next_displayed_frames.end());
 
   std::set<std::string> added_names;
-  std::set_difference(next_names.begin(), next_names.end(),
-                      prev_names.begin(), prev_names.end(),
+  std::set_difference(next_names.begin(), next_names.end(), prev_names.begin(),
+                      prev_names.end(),
                       std::inserter(added_names, added_names.end()));
 
   std::set<std::string> removed_names;
-  std::set_difference(prev_names.begin(), prev_names.end(),
-                      next_names.begin(), next_names.end(),
+  std::set_difference(prev_names.begin(), prev_names.end(), next_names.begin(),
+                      next_names.end(),
                       std::inserter(removed_names, removed_names.end()));
 
   // Remove all the removed names
@@ -235,7 +215,8 @@ void SelectFrameDialog::updateDisplayedFrames()
       continue;
     }
 
-    QListWidgetItem *item = list_widget_->takeItem(static_cast<int>(i - removed));
+    QListWidgetItem *item =
+        list_widget_->takeItem(static_cast<int>(i - removed));
     delete item;
     removed++;
   }
@@ -246,7 +227,8 @@ void SelectFrameDialog::updateDisplayedFrames()
       continue;
     }
 
-    list_widget_->insertItem(i, QString::fromStdString(next_displayed_frames[i]));
+    list_widget_->insertItem(i,
+                             QString::fromStdString(next_displayed_frames[i]));
     if (list_widget_->count() == 1) {
       list_widget_->setCurrentRow(0);
     }

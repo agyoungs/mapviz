@@ -29,43 +29,28 @@
 #ifndef MAPVIZ__STOPWATCH_HPP_
 #define MAPVIZ__STOPWATCH_HPP_
 
-#include <rclcpp/rclcpp.hpp>
-
 #include <algorithm>
+#include <rclcpp/rclcpp.hpp>
 #include <string>
 
-
-namespace mapviz
-{
+namespace mapviz {
 /* This class measures the wall time of an interval and keeps track of
  * the number of intervals, the average duration, and the maximum
  * duration.  This is used to provide some simple measurements to keep
  * an eye on performance.
  */
-class Stopwatch
-{
+class Stopwatch {
  public:
   Stopwatch()
-    :
-    count_(0),
-    clock(),
-    total_time_(0, 0),
-    max_time_(0, 0),
-    start_(0, 0)
-  {
-  }
+      : count_(0), clock(), total_time_(0, 0), max_time_(0, 0), start_(0, 0) {}
 
   /* Start measuring a new time interval. */
-  void start()
-  {
-    start_ = clock.now();
-  }
+  void start() { start_ = clock.now(); }
 
   /* End the current time interval and update the measurements.
    * Behavior is undefined if start() was not called prior to this.
    */
-  void stop()
-  {
+  void stop() {
     rclcpp::Duration dt = clock.now() - start_;
     count_ += 1;
     total_time_ = total_time_ + dt;
@@ -76,33 +61,26 @@ class Stopwatch
   int count() const { return count_; }
 
   /* Returns the longest observed duration. */
-  rclcpp::Duration maxTime() const {return max_time_;}
+  rclcpp::Duration maxTime() const { return max_time_; }
 
   /* Returns the average duration spent in the interval. */
-  rclcpp::Duration avgTime() const
-  {
+  rclcpp::Duration avgTime() const {
     if (count_) {
-      return total_time_*(1.0/count_);
+      return total_time_ * (1.0 / count_);
     } else {
       return rclcpp::Duration(0, 0);
     }
   }
 
   /* Print measurement info to the ROS console. */
-  void printInfo(rclcpp::Logger logger, const std::string &name) const
-  {
+  void printInfo(rclcpp::Logger logger, const std::string &name) const {
     if (count_) {
-      RCLCPP_INFO(logger,
-                "%s -- calls: %d, avg time: %.2fms, max time: %.2fms",
-                name.c_str(),
-                count_,
-                avgTime().seconds()*1000.0,
-                maxTime().seconds()*1000.0);
+      RCLCPP_INFO(logger, "%s -- calls: %d, avg time: %.2fms, max time: %.2fms",
+                  name.c_str(), count_, avgTime().seconds() * 1000.0,
+                  maxTime().seconds() * 1000.0);
     } else {
-      RCLCPP_INFO(logger,
-                "%s -- calls: %d, avg time: --ms, max time: --ms",
-                name.c_str(),
-                count_);
+      RCLCPP_INFO(logger, "%s -- calls: %d, avg time: --ms, max time: --ms",
+                  name.c_str(), count_);
     }
   }
 

@@ -35,10 +35,11 @@
 #include <vector>
 
 // QT libraries
-#include <QWidget>
 #include <QLabel>
-#include <QMouseEvent>
 #include <QListWidgetItem>
+#include <QMouseEvent>
+#include <QResizeEvent>
+#include <QWidget>
 
 // C++ standard libraries
 #include <string>
@@ -47,14 +48,13 @@
 // Auto-generated UI files
 #include "ui/ui_configitem.h"
 
-namespace mapviz
-{
-class ConfigItem : public QWidget
-{
+namespace mapviz {
+class ConfigItem : public QWidget {
   Q_OBJECT
 
-public:
-  explicit ConfigItem(QWidget *parent = nullptr, Qt::WindowFlags flags = Qt::WindowFlags());
+ public:
+  explicit ConfigItem(QWidget* parent = nullptr,
+                      Qt::WindowFlags flags = Qt::WindowFlags());
   ~ConfigItem() override = default;
 
   void SetName(QString name);
@@ -67,31 +67,34 @@ public:
 
   Ui::configitem ui_;
 
-Q_SIGNALS:
+ Q_SIGNALS:
   void UpdateSizeHint();
   void ToggledDraw(QListWidgetItem* plugin, bool visible);
   void DuplicateRequest(QListWidgetItem* plugin);
   void RemoveRequest(QListWidgetItem* plugin);
 
-public Q_SLOTS:
+ public Q_SLOTS:
   void Hide();
   void EditName();
   void Duplicate();
   void Remove();
   void ToggleDraw(bool toggled);
 
-private:
-  void contextMenuEvent(QContextMenuEvent *event) override;
+ private:
+  void contextMenuEvent(QContextMenuEvent* event) override;
+  void resizeEvent(QResizeEvent* event) override;
+  void updateNameLabel();
 
-protected:
+ protected:
   QListWidgetItem* item_;
   QString name_;
   QString type_;
+  QString full_label_text_;
   QAction* edit_name_action_;
   QAction* duplicate_item_action_;
   QAction* remove_item_action_;
   bool visible_;
 };
-}   // namespace mapviz
+}  // namespace mapviz
 
 #endif  // MAPVIZ__CONFIG_ITEM_HPP_

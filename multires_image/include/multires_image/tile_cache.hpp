@@ -31,98 +31,92 @@
 #define MULTIRES_IMAGE_TILE_CACHE_HPP_
 
 // C++ standard libraries
-#include <vector>
-#include <stack>
-#include <queue>
 #include <map>
+#include <queue>
+#include <stack>
+#include <vector>
 
 // QT libraries
 #include <QObject>
-#include <QThread>
-#include <QRecursiveMutex>
 #include <QOpenGLWidget>
-
+#include <QRecursiveMutex>
+#include <QThread>
+#include <multires_image/tile.hpp>
+#include <multires_image/tile_set.hpp>
 #include <tf2/transform_datatypes.hpp>
 
-#include <multires_image/tile_set.hpp>
-#include <multires_image/tile.hpp>
-
-namespace multires_image
-{
-  class TileCache : public QObject
-  {
+namespace multires_image {
+class TileCache : public QObject {
   Q_OBJECT
 
-  public:
-    TileCache(TileSet* tileSet, QOpenGLWidget* widget);
-    ~TileCache() override;
+ public:
+  TileCache(TileSet* tileSet, QOpenGLWidget* widget);
+  ~TileCache() override;
 
-    void Load(Tile* tile);
-    void Precache(const tf2::Vector3& position);
-    void Precache(double x, double y);
+  void Load(Tile* tile);
+  void Precache(const tf2::Vector3& position);
+  void Precache(double x, double y);
 
-    void SetCurrentLayer(int layer) { m_currentLayer = layer; }
+  void SetCurrentLayer(int layer) { m_currentLayer = layer; }
 
-    void Exit();
+  void Exit();
 
-  public Q_SLOTS:
-    void LoadTextureSlot(Tile*);
-    void DeleteTextureSlot(Tile*);
+ public Q_SLOTS:
+  void LoadTextureSlot(Tile*);
+  void DeleteTextureSlot(Tile*);
 
-  Q_SIGNALS:
-    void SignalLoadTexture(Tile*);
-    void SignalDeleteTexture(Tile*);
-    void SignalMemorySize(int64_t);
+ Q_SIGNALS:
+  void SignalLoadTexture(Tile*);
+  void SignalDeleteTexture(Tile*);
+  void SignalMemorySize(int64_t);
 
-  private:
-    TileSet*                  m_tileSet;
-    QOpenGLWidget*            m_widget;
-    int32_t                   m_currentLayer;
-    tf2::Vector3                 m_currentPosition;
-    bool                      m_exit;
-    int64_t                   m_memorySize;
+ private:
+  TileSet* m_tileSet;
+  QOpenGLWidget* m_widget;
+  int32_t m_currentLayer;
+  tf2::Vector3 m_currentPosition;
+  bool m_exit;
+  int64_t m_memorySize;
 
-    std::vector<std::queue<Tile*> > m_precacheRequests;
-    std::stack<Tile*>               m_renderRequests;
-    std::map<int64_t, Tile*>        m_textureLoaded;
-    std::map<int64_t, Tile*>        m_renderRequestSet;
-    std::map<int64_t, Tile*>        m_precacheRequestSet;
+  std::vector<std::queue<Tile*> > m_precacheRequests;
+  std::stack<Tile*> m_renderRequests;
+  std::map<int64_t, Tile*> m_textureLoaded;
+  std::map<int64_t, Tile*> m_renderRequestSet;
+  std::map<int64_t, Tile*> m_precacheRequestSet;
 
-    void PrecacheLayer(int layer, const tf2::Vector3& position, int size);
-    void LoadTexture(Tile* tile);
-    void UnloadTexture(Tile* tile);
+  void PrecacheLayer(int layer, const tf2::Vector3& position, int size);
+  void LoadTexture(Tile* tile);
+  void UnloadTexture(Tile* tile);
 
-    class CacheThread : public QThread
-    {
-    public:
-      explicit CacheThread(TileCache* parent) : p(parent) {}
-      virtual void run();
+  class CacheThread : public QThread {
+   public:
+    explicit CacheThread(TileCache* parent) : p(parent) {}
+    virtual void run();
 
-    private:
-      TileCache* p;
-    };
-    friend class CacheThread;
-
-    class FreeThread : public QThread
-    {
-    public:
-      explicit FreeThread(TileCache* parent) : p(parent) {}
-      virtual void run();
-
-    private:
-      TileCache* p;
-    };
-    friend class FreeThread;
-
-    CacheThread m_cacheThread;
-    FreeThread  m_freeThread;
-
-    QRecursiveMutex      m_renderRequestsLock;
-    QRecursiveMutex      m_renderRequestSetLock;
-    QRecursiveMutex      m_precacheRequestsLock;
-    QRecursiveMutex      m_precacheRequestSetLock;
-    QRecursiveMutex      m_textureLoadedLock;
+   private:
+    TileCache* p;
   };
-}
+  friend class CacheThread;
+
+  class FreeThread : public QThread {
+   public:
+    explicit FreeThread(TileCache* parent) : p(parent) {}
+    virtual void run();
+
+   private:
+    TileCache* p;
+  };
+  friend class FreeThread;
+
+  CacheThread m_cacheThread;
+  FreeThread m_freeThread;
+
+  QRecursiveMutex m_renderRequestsLock;
+  QRecursiveMutex m_renderRequestSetLock;
+  QRecursiveMutex m_precacheRequestsLock;
+  QRecursiveMutex m_precacheRequestSetLock;
+  QRecursiveMutex m_textureLoadedLock;
+};
+}  // namespace multires_image
 
 #endif  // MULTIRES_IMAGE_TILE_CACHE_HPP_

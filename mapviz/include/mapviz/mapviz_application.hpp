@@ -32,28 +32,27 @@
 
 #include <QApplication>
 #include <QEvent>
-
 #include <rclcpp/logger.hpp>
 
-namespace mapviz
-{
+namespace mapviz {
 /**
  * This class exists solely so that we can override QApplication::notify and
  * log exceptions in the event loop as errors rather than letting them
  * crash the entire program.
  */
-class MapvizApplication : public QApplication
-{
-public:
-  MapvizApplication(int &argc, char** argv,
+class MapvizApplication : public QApplication {
+ public:
+  MapvizApplication(
+      int& argc, char** argv,
       rclcpp::Logger logger = rclcpp::get_logger("mapviz::MapvizApplication"));
 
   void setLogger(const rclcpp::Logger& logger);
-private:
+
+ private:
   bool notify(QObject* receiver, QEvent* event) override;
 
   rclcpp::Logger logger_;
 };
-}   // namespace mapviz
+}  // namespace mapviz
 
 #endif  // MAPVIZ__MAPVIZ_APPLICATION_HPP_

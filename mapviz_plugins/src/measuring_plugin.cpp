@@ -27,23 +27,21 @@
 //
 // *****************************************************************************
 
-#include <mapviz_plugins/measuring_plugin.hpp>
 #include <mapviz/mapviz_plugin.hpp>
+#include <mapviz_plugins/measuring_plugin.hpp>
 
 // QT libraries
 #include <QDateTime>
-#include <QMouseEvent>
-#include <QTextStream>
-#include <QPainter>
-
 #include <QGuiApplication>
+#include <QMouseEvent>
+#include <QPainter>
+#include <QTextStream>
 
 // ROS Libraries
 #include <rclcpp/rclcpp.hpp>
 
 // Mapviz Libraries
 #include <mapviz/select_frame_dialog.hpp>
-
 #include <pluginlib/class_list_macros.hpp>
 
 // C++ Libraries
@@ -53,26 +51,23 @@
 
 PLUGINLIB_EXPORT_CLASS(mapviz_plugins::MeasuringPlugin, mapviz::MapvizPlugin)
 
-namespace mapviz_plugins
-{
+namespace mapviz_plugins {
 
 MeasuringPlugin::MeasuringPlugin()
-: MapvizPlugin()
-, ui_()
-, config_widget_(new QWidget())
-, map_canvas_(nullptr)
-, selected_point_(-1)
-, is_mouse_down_(false)
-, mouse_down_time_(0)
-, max_ms_(Q_INT64_C(500))
-, max_distance_(2.0)
-{
+    : MapvizPlugin(),
+      ui_(),
+      config_widget_(new QWidget()),
+      map_canvas_(nullptr),
+      selected_point_(-1),
+      is_mouse_down_(false),
+      mouse_down_time_(0),
+      max_ms_(Q_INT64_C(500)),
+      max_distance_(2.0) {
   ui_.setupUi(config_widget_);
   ui_.main_color->setColor(Qt::black);
   ui_.bkgnd_color->setColor(Qt::white);
 
-  QObject::connect(ui_.clear, SIGNAL(clicked()), this,
-                   SLOT(Clear()));
+  QObject::connect(ui_.clear, SIGNAL(clicked()), this, SLOT(Clear()));
   QObject::connect(ui_.show_measurements, SIGNAL(toggled(bool)), this,
                    SLOT(MeasurementsToggled(bool)));
   QObject::connect(ui_.show_bkgnd_color, SIGNAL(toggled(bool)), this,
@@ -81,40 +76,39 @@ MeasuringPlugin::MeasuringPlugin()
                    SLOT(FontSizeChanged(int)));
   QObject::connect(ui_.alpha, SIGNAL(valueChanged(double)), this,
                    SLOT(AlphaChanged(double)));
-  connect(ui_.main_color, SIGNAL(colorEdited(const QColor &)), this, SLOT(DrawIcon()));
-  connect(ui_.bkgnd_color, SIGNAL(colorEdited(const QColor &)), this, SLOT(DrawIcon()));
+  connect(ui_.main_color, SIGNAL(colorEdited(const QColor&)), this,
+          SLOT(DrawIcon()));
+  connect(ui_.bkgnd_color, SIGNAL(colorEdited(const QColor&)), this,
+          SLOT(DrawIcon()));
 
-  ui_.measurement->setText(tr("Click on the map. Distance between clicks will appear here"));
+  ui_.measurement->setText(
+      tr("Click on the map. Distance between clicks will appear here"));
   ui_.totaldistance->setText(
-    tr("Click on the map. Total distance between clicks will appear here"));
+      tr("Click on the map. Total distance between clicks will appear here"));
 }
 
-MeasuringPlugin::~MeasuringPlugin()
-{
-  if (map_canvas_)
-  {
+MeasuringPlugin::~MeasuringPlugin() {
+  if (map_canvas_) {
     map_canvas_->removeEventFilter(this);
   }
 }
 
-void MeasuringPlugin::Clear()
-{
+void MeasuringPlugin::Clear() {
   vertices_.clear();
   measurements_.clear();
-  ui_.measurement->setText(tr("Click on the map. Distance between clicks will appear here"));
+  ui_.measurement->setText(
+      tr("Click on the map. Distance between clicks will appear here"));
   ui_.totaldistance->setText(
-    tr("Click on the map. Total distance between clicks will appear here"));
+      tr("Click on the map. Total distance between clicks will appear here"));
 }
 
-QWidget* MeasuringPlugin::GetConfigWidget(QWidget* parent)
-{
+QWidget* MeasuringPlugin::GetConfigWidget(QWidget* parent) {
   config_widget_->setParent(parent);
 
   return config_widget_;
 }
 
-bool MeasuringPlugin::Initialize(QOpenGLWidget* canvas)
-{
+bool MeasuringPlugin::Initialize(QOpenGLWidget* canvas) {
   map_canvas_ = dynamic_cast<mapviz::MapCanvas*>(canvas);
   map_canvas_->installEventFilter(this);
   canvas->makeCurrent();
@@ -127,51 +121,45 @@ bool MeasuringPlugin::Initialize(QOpenGLWidget* canvas)
   return true;
 }
 
-bool MeasuringPlugin::eventFilter(QObject* object, QEvent* event)
-{
-  if(!this->Visible())
-  {
-    RCLCPP_DEBUG(node_->get_logger(), "Ignoring mouse event, since measuring plugin is hidden");
+bool MeasuringPlugin::eventFilter(QObject* object, QEvent* event) {
+  if (!this->Visible()) {
+    RCLCPP_DEBUG(node_->get_logger(),
+                 "Ignoring mouse event, since measuring plugin is hidden");
     return false;
   }
 
-  switch (event->type())
-  {
-  case QEvent::MouseButtonPress:
-    return handleMousePress(dynamic_cast<QMouseEvent*>(event));
-  case QEvent::MouseButtonRelease:
-    return handleMouseRelease(dynamic_cast<QMouseEvent*>(event));
-  case QEvent::MouseMove:
-    return handleMouseMove(dynamic_cast<QMouseEvent*>(event));
-  default:
-    return false;
+  switch (event->type()) {
+    case QEvent::MouseButtonPress:
+      return handleMousePress(dynamic_cast<QMouseEvent*>(event));
+    case QEvent::MouseButtonRelease:
+      return handleMouseRelease(dynamic_cast<QMouseEvent*>(event));
+    case QEvent::MouseMove:
+      return handleMouseMove(dynamic_cast<QMouseEvent*>(event));
+    default:
+      return false;
   }
 }
 
-bool MeasuringPlugin::handleMousePress(QMouseEvent* event)
-{
+bool MeasuringPlugin::handleMousePress(QMouseEvent* event) {
   selected_point_ = -1;
   int closest_point = 0;
   double closest_distance = std::numeric_limits<double>::max();
   QPointF point = event->localPos();
   RCLCPP_DEBUG(node_->get_logger(), "Map point: %f %f", point.x(), point.y());
-  for (size_t i = 0; i < vertices_.size(); i++)
-  {
+  for (size_t i = 0; i < vertices_.size(); i++) {
     tf2::Vector3 vertex = vertices_[i];
-    QPointF transformed = map_canvas_->FixedFrameToMapGlCoord(QPointF(vertex.x(), vertex.y()));
+    QPointF transformed =
+        map_canvas_->FixedFrameToMapGlCoord(QPointF(vertex.x(), vertex.y()));
 
     double distance = QLineF(transformed, point).length();
 
-    if (distance < closest_distance)
-    {
+    if (distance < closest_distance) {
       closest_distance = distance;
       closest_point = static_cast<int>(i);
     }
   }
-  if (event->button() == Qt::LeftButton)
-  {
-    if (closest_distance < 15)
-    {
+  if (event->button() == Qt::LeftButton) {
+    if (closest_distance < 15) {
       selected_point_ = closest_point;
       return true;
     } else {
@@ -181,8 +169,7 @@ bool MeasuringPlugin::handleMousePress(QMouseEvent* event)
       return false;
     }
   } else if (event->button() == Qt::RightButton) {
-    if (closest_distance < 15)
-    {
+    if (closest_distance < 15) {
       vertices_.erase(vertices_.begin() + closest_point);
       DistanceCalculation();  // function to calculate distance
       return true;
@@ -193,10 +180,9 @@ bool MeasuringPlugin::handleMousePress(QMouseEvent* event)
   return false;
 }
 
-bool MeasuringPlugin::handleMouseRelease(QMouseEvent* event)
-{
-  if (selected_point_ >= 0 && static_cast<size_t>(selected_point_) < vertices_.size())
-  {
+bool MeasuringPlugin::handleMouseRelease(QMouseEvent* event) {
+  if (selected_point_ >= 0 &&
+      static_cast<size_t>(selected_point_) < vertices_.size()) {
     QPointF point = event->localPos();
     QPointF transformed = map_canvas_->MapGlCoordToFixedFrame(point);
     tf2::Vector3 position(transformed.x(), transformed.y(), 0.0);
@@ -216,8 +202,7 @@ bool MeasuringPlugin::handleMouseRelease(QMouseEvent* event)
     // and was held for shorter than the maximum time..  This prevents click
     // events from being fired if the user is dragging the mouse across the map
     // or just holding the cursor in place.
-    if (msecsDiff < max_ms_ && distance <= max_distance_)
-    {
+    if (msecsDiff < max_ms_ && distance <= max_distance_) {
       QPointF point = event->localPos();
 
       QPointF transformed = map_canvas_->MapGlCoordToFixedFrame(point);
@@ -231,22 +216,19 @@ bool MeasuringPlugin::handleMouseRelease(QMouseEvent* event)
   return false;
 }
 
-void MeasuringPlugin::DistanceCalculation()
-{
-  double distance_instant = -1;   // measurement between last two points
-  double distance_sum = 0;  // sum of distance from all points
+void MeasuringPlugin::DistanceCalculation() {
+  double distance_instant = -1;  // measurement between last two points
+  double distance_sum = 0;       // sum of distance from all points
   tf2::Vector3 last_position_(0, 0, 0);
   std::string frame = target_frame_;
   measurements_.clear();
-  for (auto vertex : vertices_)
-  {
-      if (last_position_ != tf2::Vector3(0, 0, 0))
-      {
-          distance_instant = last_position_.distance(vertex);
-          distance_sum = distance_sum + distance_instant;
-          measurements_.push_back(distance_instant);
-      }
-      last_position_ = vertex;
+  for (auto vertex : vertices_) {
+    if (last_position_ != tf2::Vector3(0, 0, 0)) {
+      distance_instant = last_position_.distance(vertex);
+      distance_sum = distance_sum + distance_instant;
+      measurements_.push_back(distance_instant);
+    }
+    last_position_ = vertex;
   }
   measurements_.push_back(distance_sum);
 
@@ -254,8 +236,7 @@ void MeasuringPlugin::DistanceCalculation()
   QTextStream stream(&new_point);
   stream.setRealNumberPrecision(4);
 
-  if (distance_instant > 0.0)
-  {
+  if (distance_instant > 0.0) {
     stream << distance_instant << " meters";
   }
 
@@ -265,39 +246,36 @@ void MeasuringPlugin::DistanceCalculation()
   QTextStream stream2(&new_point2);
   stream2.setRealNumberPrecision(4);
 
-  if (distance_sum > 0.0)
-  {
+  if (distance_sum > 0.0) {
     stream2 << distance_sum << " meters";
   }
 
   ui_.totaldistance->setText(new_point2);
 }
 
-bool MeasuringPlugin::handleMouseMove(QMouseEvent* event)
-{
-  if (selected_point_ >= 0 && static_cast<size_t>(selected_point_) < vertices_.size())
-  {
+bool MeasuringPlugin::handleMouseMove(QMouseEvent* event) {
+  if (selected_point_ >= 0 &&
+      static_cast<size_t>(selected_point_) < vertices_.size()) {
     QPointF point = event->localPos();
     std::string frame = target_frame_;
     QPointF transformed = map_canvas_->MapGlCoordToFixedFrame(point);
     tf2::Vector3 position(transformed.x(), transformed.y(), 0.0);
     vertices_[selected_point_].setY(position.y());
     vertices_[selected_point_].setX(position.x());
-    DistanceCalculation(); //function to calculate distance
+    DistanceCalculation();  // function to calculate distance
     return true;
-  }   // Let other plugins process this event too
+  }  // Let other plugins process this event too
   return false;
 }
 
-void MeasuringPlugin::Draw(double x, double y, double scale)
-{
+void MeasuringPlugin::Draw(double x, double y, double scale) {
   glLineWidth(1);
   const QColor color = ui_.main_color->color();
-  glColor4d(color.redF(), color.greenF(), color.blueF(), ui_.alpha->value()/2.0);
+  glColor4d(color.redF(), color.greenF(), color.blueF(),
+            ui_.alpha->value() / 2.0);
   glBegin(GL_LINE_STRIP);
 
-  for (const auto& vertex : vertices_)
-  {
+  for (const auto& vertex : vertices_) {
     glVertex2d(vertex.x(), vertex.y());
   }
 
@@ -305,7 +283,8 @@ void MeasuringPlugin::Draw(double x, double y, double scale)
 
   glBegin(GL_LINES);
 
-  glColor4d(color.redF(), color.greenF(), color.blueF(), ui_.alpha->value()/2.0);
+  glColor4d(color.redF(), color.greenF(), color.blueF(),
+            ui_.alpha->value() / 2.0);
 
   glEnd();
 
@@ -313,8 +292,7 @@ void MeasuringPlugin::Draw(double x, double y, double scale)
   glPointSize(9);
   glBegin(GL_POINTS);
 
-  for (const auto& vertex : vertices_)
-  {
+  for (const auto& vertex : vertices_) {
     glVertex2d(vertex.x(), vertex.y());
   }
   glEnd();
@@ -322,11 +300,10 @@ void MeasuringPlugin::Draw(double x, double y, double scale)
   PrintInfo("OK");
 }
 
-void MeasuringPlugin::Paint(QPainter* painter, double x, double y, double scale)
-{
+void MeasuringPlugin::Paint(QPainter* painter, double x, double y,
+                            double scale) {
   bool show_measurements = ui_.show_measurements->isChecked();
-  if (!show_measurements || vertices_.empty())
-  {
+  if (!show_measurements || vertices_.empty()) {
     return;
   }
 
@@ -338,7 +315,8 @@ void MeasuringPlugin::Paint(QPainter* painter, double x, double y, double scale)
 
   // set the draw color for the text to be the same as the rest
   QColor color = ui_.main_color->color();
-  double alpha = ui_.alpha->value()*2.0 < 1.0 ? ui_.alpha->value()*2.0 : 1.0;
+  double alpha =
+      ui_.alpha->value() * 2.0 < 1.0 ? ui_.alpha->value() * 2.0 : 1.0;
   color.setAlphaF(alpha);
   QPen pen(QBrush(color), 1);
   painter->setPen(pen);
@@ -348,17 +326,17 @@ void MeasuringPlugin::Paint(QPainter* painter, double x, double y, double scale)
   std::vector<MeasurementBox> tags;
 
   // (midpoint positioned) measurements
-  for (int i = 0; i < vertices_.size()-1; i++)
-  {
+  for (int i = 0; i < vertices_.size() - 1; i++) {
     tf2::Vector3 v1 = vertices_[i];
-    tf2::Vector3 v2 = vertices_[i+1];
+    tf2::Vector3 v2 = vertices_[i + 1];
 
     mb.string.setNum(measurements_[i], 'g', 5);
     mb.string.prepend(" ");
     mb.string.append(" m ");
     // drawText used here to get correct mb.rect size
     painter->drawText(qrect, 0, mb.string, &mb.rect);
-    mb.rect.moveTopLeft(tf.map(QPointF((v1.x()+v2.x())/2, (v1.y()+v2.y())/2)));
+    mb.rect.moveTopLeft(
+        tf.map(QPointF((v1.x() + v2.x()) / 2, (v1.y() + v2.y()) / 2)));
     tags.push_back(mb);
   }
   // (endpoint positioned) total dist
@@ -366,19 +344,16 @@ void MeasuringPlugin::Paint(QPainter* painter, double x, double y, double scale)
   mb.string.prepend(" Total: ");
   mb.string.append(" m ");
   painter->drawText(qrect, 0, mb.string, &mb.rect);
-  mb.rect.moveTopLeft(tf.map(QPointF(vertices_.back().x(), vertices_.back().y())));
+  mb.rect.moveTopLeft(
+      tf.map(QPointF(vertices_.back().x(), vertices_.back().y())));
   tags.push_back(mb);
 
   // prevent text overlapping
-  for (int i = 0; i < tags.size(); i++)
-  {
-    for (int j = 0; j < tags.size(); j++)
-    {
-      if (i != j && tags[i].rect.intersects(tags[j].rect))
-      {
+  for (int i = 0; i < tags.size(); i++) {
+    for (int j = 0; j < tags.size(); j++) {
+      if (i != j && tags[i].rect.intersects(tags[j].rect)) {
         QRectF overlap = tags[i].rect.intersected(tags[j].rect);
-        if (tags[i].rect.y() > tags[j].rect.y())
-        {
+        if (tags[i].rect.y() > tags[j].rect.y()) {
           tags[i].rect.moveTop(tags[i].rect.y() + overlap.height());
         } else {
           tags[i].rect.moveTop(tags[i].rect.y() - overlap.height());
@@ -388,10 +363,8 @@ void MeasuringPlugin::Paint(QPainter* painter, double x, double y, double scale)
   }
 
   // paint tags
-  for (const auto& tag : tags)
-  {
-    if (ui_.show_bkgnd_color->isChecked())
-    {
+  for (const auto& tag : tags) {
+    if (ui_.show_bkgnd_color->isChecked()) {
       color = ui_.bkgnd_color->color();
       color.setAlphaF(ui_.alpha->value());
       painter->fillRect(tag.rect, color);
@@ -402,78 +375,67 @@ void MeasuringPlugin::Paint(QPainter* painter, double x, double y, double scale)
   painter->restore();
 }
 
-void MeasuringPlugin::LoadConfig(const YAML::Node& node, const std::string& path)
-{
-  if (node["main_color"])
-  {
+void MeasuringPlugin::LoadConfig(const YAML::Node& node,
+                                 const std::string& path) {
+  if (node["main_color"]) {
     std::string color = node["main_color"].as<std::string>();
     ui_.main_color->setColor(QColor(color.c_str()));
   }
 
-  if (node["bkgnd_color"])
-  {
+  if (node["bkgnd_color"]) {
     std::string color = node["bkgnd_color"].as<std::string>();
     ui_.bkgnd_color->setColor(QColor(color.c_str()));
   }
 
-  if (node["show_bkgnd_color"])
-  {
+  if (node["show_bkgnd_color"]) {
     bool show_bkgnd_color = node["show_bkgnd_color"].as<bool>();
     ui_.show_bkgnd_color->setChecked(show_bkgnd_color);
     BkgndColorToggled(show_bkgnd_color);
   }
 
-  if (node["show_measurements"])
-  {
+  if (node["show_measurements"]) {
     bool show_measurements = node["show_measurements"].as<bool>();
     ui_.show_measurements->setChecked(show_measurements);
     MeasurementsToggled(show_measurements);
   }
 
-  if (node["font_size"])
-  {
+  if (node["font_size"]) {
     int font_size = node["font_size"].as<int>();
     ui_.font_size->setValue(font_size);
     FontSizeChanged(font_size);
   }
 
-  if (node["alpha"])
-  {
+  if (node["alpha"]) {
     double alpha = node["alpha"].as<double>();
     ui_.alpha->setValue(alpha);
     AlphaChanged(alpha);
   }
 }
 
-void MeasuringPlugin::SaveConfig(YAML::Emitter& emitter, const std::string& path)
-{
-  emitter << YAML::Key
-    << "main_color"
-    << YAML::Value
-    << ui_.main_color->color().name().toStdString();
-  emitter << YAML::Key
-    << "bkgnd_color"
-    << YAML::Value
-    << ui_.bkgnd_color->color().name().toStdString();
-  emitter << YAML::Key << "show_bkgnd_color" << YAML::Value << ui_.show_bkgnd_color->isChecked();
-  emitter << YAML::Key << "show_measurements" << YAML::Value << ui_.show_measurements->isChecked();
+void MeasuringPlugin::SaveConfig(YAML::Emitter& emitter,
+                                 const std::string& path) {
+  emitter << YAML::Key << "main_color" << YAML::Value
+          << ui_.main_color->color().name().toStdString();
+  emitter << YAML::Key << "bkgnd_color" << YAML::Value
+          << ui_.bkgnd_color->color().name().toStdString();
+  emitter << YAML::Key << "show_bkgnd_color" << YAML::Value
+          << ui_.show_bkgnd_color->isChecked();
+  emitter << YAML::Key << "show_measurements" << YAML::Value
+          << ui_.show_measurements->isChecked();
   emitter << YAML::Key << "font_size" << YAML::Value << ui_.font_size->value();
   emitter << YAML::Key << "alpha" << YAML::Value << ui_.alpha->value();
 }
 
-void MeasuringPlugin::PrintError(const std::string& message)
-{
+void MeasuringPlugin::PrintError(const std::string& message) {
   PrintErrorHelper(ui_.status, message, 1.0);
 }
 
-void MeasuringPlugin::PrintInfo(const std::string& message)
-{
+void MeasuringPlugin::PrintInfo(const std::string& message) {
   PrintInfoHelper(ui_.status, message, 1.0);
 }
 
-void MeasuringPlugin::PrintWarning(const std::string& message)
-{
+void MeasuringPlugin::PrintWarning(const std::string& message) {
   PrintWarningHelper(ui_.status, message, 1.0);
 }
 
-}   // namespace mapviz_plugins
+}  // namespace mapviz_plugins

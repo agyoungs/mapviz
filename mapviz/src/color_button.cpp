@@ -27,23 +27,16 @@
 // DAMAGE.
 //
 // *****************************************************************************
+#include <QColorDialog>
 #include <mapviz/color_button.hpp>
 
-#include <QColorDialog>
-
-namespace mapviz
-{
-ColorButton::ColorButton(QWidget *parent)
-  :
-  QPushButton(parent)
-{
+namespace mapviz {
+ColorButton::ColorButton(QWidget *parent) : QPushButton(parent) {
   setColor(Qt::black);
-  QObject::connect(this, SIGNAL(clicked(bool)),
-                   this, SLOT(handleClicked()));
+  QObject::connect(this, SIGNAL(clicked(bool)), this, SLOT(handleClicked()));
 }
 
-void ColorButton::setColor(const QColor &color)
-{
+void ColorButton::setColor(const QColor &color) {
   if (!color.isValid() || color == color_) {
     return;
   }
@@ -61,8 +54,7 @@ void ColorButton::setColor(const QColor &color)
   Q_EMIT colorChanged(color_);
 }
 
-void ColorButton::handleClicked()
-{
+void ColorButton::handleClicked() {
   // Note: We do not pass ourself as the parent or else the dialog
   // will inherit our color as the background!
   QColor new_color = QColorDialog::getColor(color_);

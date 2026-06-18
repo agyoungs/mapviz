@@ -26,45 +26,36 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 // *****************************************************************************
-#include <algorithm>
-#include <map>
-#include <set>
-#include <string>
-#include <vector>
+#include <rmw/qos_profiles.h>
 
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QListWidget>
 #include <QLineEdit>
+#include <QListWidget>
 #include <QPushButton>
 #include <QSpinBox>
 #include <QTimerEvent>
 #include <QVBoxLayout>
-
-#include <rmw/qos_profiles.h>
-
+#include <algorithm>
+#include <map>
 #include <mapviz_plugins/topic_select.hpp>
+#include <set>
+#include <string>
+#include <vector>
 
-namespace mapviz_plugins
-{
+namespace mapviz_plugins {
 std::pair<std::string, rmw_qos_profile_t> SelectTopicDialog::selectTopic(
-  const rclcpp::Node::SharedPtr& node,
-  const std::string &datatype,
-  const rmw_qos_profile_t& qos,
-  QWidget* parent)
-{
+    const rclcpp::Node::SharedPtr& node, const std::string& datatype,
+    const rmw_qos_profile_t& qos, QWidget* parent) {
   std::vector<std::string> datatypes;
   datatypes.push_back(datatype);
   return selectTopic(node, datatypes, qos, parent);
 }
 
 std::pair<std::string, rmw_qos_profile_t> SelectTopicDialog::selectTopic(
-  const rclcpp::Node::SharedPtr& node,
-  const std::string& datatype1,
-  const std::string& datatype2,
-  const rmw_qos_profile_t& qos,
-  QWidget* parent)
-{
+    const rclcpp::Node::SharedPtr& node, const std::string& datatype1,
+    const std::string& datatype2, const rmw_qos_profile_t& qos,
+    QWidget* parent) {
   std::vector<std::string> datatypes;
   datatypes.push_back(datatype1);
   datatypes.push_back(datatype2);
@@ -72,11 +63,9 @@ std::pair<std::string, rmw_qos_profile_t> SelectTopicDialog::selectTopic(
 }
 
 std::pair<std::string, rmw_qos_profile_t> SelectTopicDialog::selectTopic(
-  const rclcpp::Node::SharedPtr& node,
-  const std::vector<std::string>& datatypes,
-  const rmw_qos_profile_t& qos,
-  QWidget* parent)
-{
+    const rclcpp::Node::SharedPtr& node,
+    const std::vector<std::string>& datatypes, const rmw_qos_profile_t& qos,
+    QWidget* parent) {
   SelectTopicDialog dialog(node, qos, parent);
   dialog.allowMultipleTopics(false);
   dialog.setDatatypeFilter(datatypes);
@@ -85,41 +74,34 @@ std::pair<std::string, rmw_qos_profile_t> SelectTopicDialog::selectTopic(
   } else {
     rmw_qos_profile_t default_profile = rmw_qos_profile_default;
     return std::make_pair<std::string, rmw_qos_profile_t>(
-      std::string(),
-      std::move(default_profile));
+        std::string(), std::move(default_profile));
   }
 }
 
-std::pair<std::vector<std::string>, rmw_qos_profile_t> SelectTopicDialog::selectTopics(
-  const rclcpp::Node::SharedPtr& node,
-  const std::string& datatype,
-  const rmw_qos_profile_t& qos,
-  QWidget* parent)
-{
+std::pair<std::vector<std::string>, rmw_qos_profile_t>
+SelectTopicDialog::selectTopics(const rclcpp::Node::SharedPtr& node,
+                                const std::string& datatype,
+                                const rmw_qos_profile_t& qos, QWidget* parent) {
   std::vector<std::string> datatypes;
   datatypes.push_back(datatype);
   return selectTopics(node, datatypes, qos, parent);
 }
 
-std::pair<std::vector<std::string>, rmw_qos_profile_t> SelectTopicDialog::selectTopics(
-  const rclcpp::Node::SharedPtr& node,
-  const std::string& datatype1,
-  const std::string& datatype2,
-  const rmw_qos_profile_t& qos,
-  QWidget* parent)
-{
+std::pair<std::vector<std::string>, rmw_qos_profile_t>
+SelectTopicDialog::selectTopics(const rclcpp::Node::SharedPtr& node,
+                                const std::string& datatype1,
+                                const std::string& datatype2,
+                                const rmw_qos_profile_t& qos, QWidget* parent) {
   std::vector<std::string> datatypes;
   datatypes.push_back(datatype1);
   datatypes.push_back(datatype2);
   return selectTopics(node, datatypes, qos, parent);
 }
 
-std::pair<std::vector<std::string>, rmw_qos_profile_t> SelectTopicDialog::selectTopics(
-  const rclcpp::Node::SharedPtr& node,
-  const std::vector<std::string>& datatypes,
-  const rmw_qos_profile_t& qos,
-  QWidget* parent)
-{
+std::pair<std::vector<std::string>, rmw_qos_profile_t>
+SelectTopicDialog::selectTopics(const rclcpp::Node::SharedPtr& node,
+                                const std::vector<std::string>& datatypes,
+                                const rmw_qos_profile_t& qos, QWidget* parent) {
   SelectTopicDialog dialog(node, qos, parent);
   dialog.allowMultipleTopics(true);
   dialog.setDatatypeFilter(datatypes);
@@ -129,77 +111,56 @@ std::pair<std::vector<std::string>, rmw_qos_profile_t> SelectTopicDialog::select
     rmw_qos_profile_t default_profile = rmw_qos_profile_default;
     std::vector<std::string> topics;
     return std::make_pair<std::vector<std::string>, rmw_qos_profile_t>(
-      std::move(topics),
-      std::move(default_profile));
+        std::move(topics), std::move(default_profile));
   }
 }
 
-SelectTopicDialog::SelectTopicDialog(
-  const rclcpp::Node::SharedPtr& node,
-  const rmw_qos_profile_t& qos,
-  QWidget* parent)
-  :
-  QDialog(parent),
-  ui_(new Ui::TopicSelect),
-  nh_(node)
-{
+SelectTopicDialog::SelectTopicDialog(const rclcpp::Node::SharedPtr& node,
+                                     const rmw_qos_profile_t& qos,
+                                     QWidget* parent)
+    : QDialog(parent), ui_(new Ui::TopicSelect), nh_(node) {
   ui_->setupUi(this);
 
   ui_->depthSpinBox->setValue(qos.depth);
 
-  if (qos.history == RMW_QOS_POLICY_HISTORY_KEEP_LAST)
-  {
+  if (qos.history == RMW_QOS_POLICY_HISTORY_KEEP_LAST) {
     ui_->historyKeepLastRadioButton->setChecked(true);
-  }
-  else
-  {
+  } else {
     ui_->historyKeepAllRadioButton->setChecked(true);
   }
 
-  if (qos.reliability == RMW_QOS_POLICY_RELIABILITY_RELIABLE)
-  {
+  if (qos.reliability == RMW_QOS_POLICY_RELIABILITY_RELIABLE) {
     ui_->reliabilityReliableRadioButton->setChecked(true);
-  }
-  else
-  {
+  } else {
     ui_->reliabilityBestEffortRadioButton->setChecked(true);
   }
 
-  if (qos.durability == RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL)
-  {
+  if (qos.durability == RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL) {
     ui_->durabilityTransientRadioButton->setChecked(true);
-  }
-  else
-  {
+  } else {
     ui_->durabilityVolatileRadioButton->isChecked();
   }
 
-  connect(ui_->filterLineEdit,
-    SIGNAL(textChanged(const QString &)),
-    this,
-    SLOT(updateDisplayedTopics()));
+  connect(ui_->filterLineEdit, SIGNAL(textChanged(const QString&)), this,
+          SLOT(updateDisplayedTopics()));
 
   fetch_topics_timer_id_ = startTimer(1000);
   fetchTopics();
 }
 
-void SelectTopicDialog::timerEvent(QTimerEvent *event)
-{
+void SelectTopicDialog::timerEvent(QTimerEvent* event) {
   if (event->timerId() == fetch_topics_timer_id_) {
     fetchTopics();
   }
 }
 
-void SelectTopicDialog::closeEvent(QCloseEvent *event)
-{
+void SelectTopicDialog::closeEvent(QCloseEvent* event) {
   // We don't need to keep querying the system
   killTimer(fetch_topics_timer_id_);
   QDialog::closeEvent(event);
 }
 
-void SelectTopicDialog::allowMultipleTopics(
-  bool allow)
-{
+void SelectTopicDialog::allowMultipleTopics(bool allow) {
   if (allow) {
     ui_->topicList->setSelectionMode(QAbstractItemView::MultiSelection);
   } else {
@@ -208,32 +169,30 @@ void SelectTopicDialog::allowMultipleTopics(
 }
 
 void SelectTopicDialog::setDatatypeFilter(
-  const std::vector<std::string> &datatypes)
-{
+    const std::vector<std::string>& datatypes) {
   allowed_datatypes_.clear();
-  for (const auto & datatype : datatypes) {
+  for (const auto& datatype : datatypes) {
     allowed_datatypes_.insert(datatype);
   }
   updateDisplayedTopics();
 }
 
-std::pair<std::string, rmw_qos_profile_t> SelectTopicDialog::selectedTopic() const
-{
+std::pair<std::string, rmw_qos_profile_t> SelectTopicDialog::selectedTopic()
+    const {
   auto [selection, qos] = selectedTopics();
   if (selection.empty()) {
-    return std::make_pair<std::string, rmw_qos_profile_t>(
-      std::string(),
-      std::move(qos));
+    return std::make_pair<std::string, rmw_qos_profile_t>(std::string(),
+                                                          std::move(qos));
   } else {
     return std::make_pair<std::string, rmw_qos_profile_t>(
-      std::move(selection.front()),
-      std::move(qos));
+        std::move(selection.front()), std::move(qos));
   }
 }
 
-std::pair<std::vector<std::string>, rmw_qos_profile_t> SelectTopicDialog::selectedTopics() const
-{
-  QModelIndexList qt_selection = ui_->topicList->selectionModel()->selectedIndexes();
+std::pair<std::vector<std::string>, rmw_qos_profile_t>
+SelectTopicDialog::selectedTopics() const {
+  QModelIndexList qt_selection =
+      ui_->topicList->selectionModel()->selectedIndexes();
 
   std::vector<std::string> selection;
   selection.resize(qt_selection.size());
@@ -253,46 +212,38 @@ std::pair<std::vector<std::string>, rmw_qos_profile_t> SelectTopicDialog::select
   qos.depth = static_cast<int>(ui_->depthSpinBox->value());
   if (ui_->historyKeepLastRadioButton->isChecked()) {
     qos.history = RMW_QOS_POLICY_HISTORY_KEEP_LAST;
-  }
-  else {
+  } else {
     qos.history = RMW_QOS_POLICY_HISTORY_KEEP_ALL;
   }
 
   if (ui_->reliabilityReliableRadioButton->isChecked()) {
     qos.reliability = RMW_QOS_POLICY_RELIABILITY_RELIABLE;
-  }
-  else {
+  } else {
     qos.reliability = RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT;
   }
 
   if (ui_->durabilityTransientRadioButton->isChecked()) {
     qos.durability = RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL;
-  }
-  else {
+  } else {
     qos.durability = RMW_QOS_POLICY_DURABILITY_VOLATILE;
   }
 
   auto ret_value = std::make_pair<std::vector<std::string>, rmw_qos_profile_t>(
-    std::move(selection),
-    std::move(qos));
-  
+      std::move(selection), std::move(qos));
+
   return ret_value;
 }
 
-static bool topicSort(const std::string &info1,
-                      const std::string &info2)
-{
+static bool topicSort(const std::string& info1, const std::string& info2) {
   return info1 < info2;
 }
 
-void SelectTopicDialog::fetchTopics()
-{
+void SelectTopicDialog::fetchTopics() {
   known_topics_ = nh_->get_topic_names_and_types();
   auto services = nh_->get_service_names_and_types();
   known_topics_.insert(services.begin(), services.end());
   std::vector<std::string> map_keys;
-  for (auto const& element : known_topics_)
-  {
+  for (auto const& element : known_topics_) {
     map_keys.push_back(element.first);
   }
   std::sort(map_keys.begin(), map_keys.end(), topicSort);
@@ -300,15 +251,14 @@ void SelectTopicDialog::fetchTopics()
 }
 
 std::vector<std::string> SelectTopicDialog::filterTopics(
-  const std::map<std::string, std::vector<std::string>> &topics) const
-{
+    const std::map<std::string, std::vector<std::string>>& topics) const {
   QString topic_filter = ui_->filterLineEdit->text();
   std::vector<std::string> filtered;
 
   for (auto const& topic : topics) {
     if (!allowed_datatypes_.empty()) {
       // Skip any topic names that don't contain allowed types
-      bool missing_allowed_type = true;   // Assume the worst
+      bool missing_allowed_type = true;  // Assume the worst
       for (auto const& datatype : topic.second) {
         if (allowed_datatypes_.count(datatype) == 1) {
           missing_allowed_type = false;
@@ -323,7 +273,7 @@ std::vector<std::string> SelectTopicDialog::filterTopics(
     QString topic_name = QString::fromStdString(topic.first);
     if (!topic_filter.isEmpty() &&
         !topic_name.contains(topic_filter, Qt::CaseInsensitive)) {
-          continue;
+      continue;
     }
 
     filtered.push_back(topic.first);
@@ -332,8 +282,7 @@ std::vector<std::string> SelectTopicDialog::filterTopics(
   return filtered;
 }
 
-void SelectTopicDialog::updateDisplayedTopics()
-{
+void SelectTopicDialog::updateDisplayedTopics() {
   std::vector<std::string> next_displayed_topics = filterTopics(known_topics_);
 
   // It's a lot more work to keep track of the additions/removals like
@@ -344,24 +293,23 @@ void SelectTopicDialog::updateDisplayedTopics()
   displayed_topics_.clear();
   std::set<std::string> prev_names;
 
-  for (int i = 0; i < ui_->topicList->count(); i++)
-  {
+  for (int i = 0; i < ui_->topicList->count(); i++) {
     prev_names.insert(ui_->topicList->item(i)->text().toStdString());
     displayed_topics_.push_back(ui_->topicList->item(i)->text().toStdString());
   }
   std::set<std::string> next_names;
-  for (const auto & next_displayed_topic : next_displayed_topics) {
+  for (const auto& next_displayed_topic : next_displayed_topics) {
     next_names.insert(next_displayed_topic);
   }
 
   std::set<std::string> added_names;
-  std::set_difference(next_names.begin(), next_names.end(),
-                      prev_names.begin(), prev_names.end(),
+  std::set_difference(next_names.begin(), next_names.end(), prev_names.begin(),
+                      prev_names.end(),
                       std::inserter(added_names, added_names.end()));
 
   std::set<std::string> removed_names;
-  std::set_difference(prev_names.begin(), prev_names.end(),
-                      next_names.begin(), next_names.end(),
+  std::set_difference(prev_names.begin(), prev_names.end(), next_names.begin(),
+                      next_names.end(),
                       std::inserter(removed_names, removed_names.end()));
 
   // Remove all the removed names
@@ -370,9 +318,10 @@ void SelectTopicDialog::updateDisplayedTopics()
     if (removed_names.count(displayed_topics_[i]) == 0) {
       continue;
     }
-    RCLCPP_DEBUG(nh_->get_logger(), "Removing %s", displayed_topics_[i].c_str());
+    RCLCPP_DEBUG(nh_->get_logger(), "Removing %s",
+                 displayed_topics_[i].c_str());
 
-    QListWidgetItem *item = ui_->topicList->takeItem(i - removed);
+    QListWidgetItem* item = ui_->topicList->takeItem(i - removed);
     delete item;
     removed++;
   }
@@ -383,8 +332,10 @@ void SelectTopicDialog::updateDisplayedTopics()
       continue;
     }
 
-    ui_->topicList->insertItem(i, QString::fromStdString(next_displayed_topics[i]));
-    RCLCPP_DEBUG(nh_->get_logger(), "Inserting %s", next_displayed_topics[i].c_str());
+    ui_->topicList->insertItem(
+        i, QString::fromStdString(next_displayed_topics[i]));
+    RCLCPP_DEBUG(nh_->get_logger(), "Inserting %s",
+                 next_displayed_topics[i].c_str());
     if (ui_->topicList->count() == 1) {
       ui_->topicList->setCurrentRow(0);
     }

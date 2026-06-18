@@ -33,40 +33,36 @@
 // ROS libraries
 #include <swri_transform_util/transform.h>
 #include <swri_transform_util/transform_manager.h>
-#include <rclcpp/rclcpp.hpp>
-#include <tf2/transform_datatypes.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
-
-#include <mapviz/widgets.hpp>
 #include <yaml-cpp/yaml.h>
 
+#include <mapviz/widgets.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <tf2/transform_datatypes.hpp>
+
 // QT libraries
-#include <QWidget>
 #include <QObject>
 #include <QOpenGLWidget>
+#include <QWidget>
 
 // C++ standard libraries
 #include <memory>
 #include <string>
 
-
 #include "mapviz/stopwatch.hpp"
 
-namespace mapviz
-{
-class MapvizPlugin : public QObject
-{
+namespace mapviz {
+class MapvizPlugin : public QObject {
   Q_OBJECT
-public:
+ public:
   ~MapvizPlugin() override = default;
 
   virtual bool Initialize(
       std::shared_ptr<tf2_ros::Buffer> tf_buffer,
       std::shared_ptr<tf2_ros::TransformListener> tf_listener,
       swri_transform_util::TransformManagerPtr tf_manager,
-      QOpenGLWidget* canvas)
-  {
+      QOpenGLWidget* canvas) {
     tf_buf_ = tf_buffer;
     tf_ = tf_listener;
     tf_manager_ = tf_manager;
@@ -87,11 +83,10 @@ public:
    * Draws on the Mapviz canvas using a QPainter; this is called after Draw().
    * You only need to implement this if you're actually using a QPainter.
    */
-  virtual void Paint(QPainter* /* painter */, double /* x */,
-                     double /* y */, double /* scale */) {}
+  virtual void Paint(QPainter* /* painter */, double /* x */, double /* y */,
+                     double /* scale */) {}
 
-  void SetUseLatestTransforms(bool value)
-  {
+  void SetUseLatestTransforms(bool value) {
     if (value != use_latest_transforms_) {
       use_latest_transforms_ = value;
       Q_EMIT UseLatestTransformsChanged(use_latest_transforms_);
@@ -108,22 +103,19 @@ public:
 
   int DrawOrder() const { return draw_order_; }
 
-  void SetDrawOrder(int order)
-  {
+  void SetDrawOrder(int order) {
     if (draw_order_ != order) {
       draw_order_ = order;
       Q_EMIT DrawOrderChanged(draw_order_);
     }
   }
 
-  virtual void SetNode(rclcpp::Node& node)
-  {
+  virtual void SetNode(rclcpp::Node& node) {
     // node_ = node;
     node_ = node.shared_from_this();
   }
 
-  void DrawPlugin(double x, double y, double scale)
-  {
+  void DrawPlugin(double x, double y, double scale) {
     if (visible_ && initialized_) {
       meas_transform_.start();
       Transform();
@@ -135,8 +127,7 @@ public:
     }
   }
 
-  void PaintPlugin(QPainter* painter, double x, double y, double scale)
-  {
+  void PaintPlugin(QPainter* painter, double x, double y, double scale) {
     if (visible_ && initialized_) {
       meas_transform_.start();
       Transform();
@@ -148,8 +139,7 @@ public:
     }
   }
 
-  void SetTargetFrame(const std::string& frame_id)
-  {
+  void SetTargetFrame(const std::string& frame_id) {
     if (frame_id != target_frame_) {
       target_frame_ = frame_id;
 
@@ -163,27 +153,22 @@ public:
 
   bool Visible() const { return visible_; }
 
-  void SetVisible(bool visible)
-  {
+  void SetVisible(bool visible) {
     if (visible_ != visible) {
       visible_ = visible;
       Q_EMIT VisibleChanged(visible_);
     }
   }
 
-  bool GetTransform(
-    const rclcpp::Time& stamp,
-    swri_transform_util::Transform& transform,
-    bool use_latest_transforms = true)
-  {
+  bool GetTransform(const rclcpp::Time& stamp,
+                    swri_transform_util::Transform& transform,
+                    bool use_latest_transforms = true) {
     return GetTransform(source_frame_, stamp, transform, use_latest_transforms);
   }
 
-  bool GetTransform(const std::string& source,
-    const rclcpp::Time& stamp,
-    swri_transform_util::Transform& transform,
-    bool use_latest_transforms = true)
-  {
+  bool GetTransform(const std::string& source, const rclcpp::Time& stamp,
+                    swri_transform_util::Transform& transform,
+                    bool use_latest_transforms = true) {
     if (!initialized_) {
       return false;
     }
@@ -193,32 +178,20 @@ public:
 
     if (use_latest_transforms_ && use_latest_transforms) {
       time = tf2::TimePointZero;
-    }
-    else
-    {
+    } else {
       time = tf2::timeFromSec(stamp.seconds());
     }
 
-    if (tf_manager_->GetTransform(
-        target_frame_,
-        source,
-        time,
-        transform))
-    {
+    if (tf_manager_->GetTransform(target_frame_, source, time, transform)) {
       return true;
     } else if (time != tf2::TimePointZero) {
       rclcpp::Duration elapsed = now - stamp;
 
-      if (elapsed.seconds() < 0.1)
-      {
+      if (elapsed.seconds() < 0.1) {
         // If the stamped transform failed because it is too recent, find the
         // most recent transform in the cache instead.
-        if (tf_manager_->GetTransform(
-            target_frame_,
-            source,
-            tf2::TimePointZero,
-            transform))
-        {
+        if (tf_manager_->GetTransform(target_frame_, source, tf2::TimePointZero,
+                                      transform)) {
           return true;
         }
       }
@@ -240,48 +213,37 @@ public:
 
   void SetIcon(IconWidget* icon) { icon_ = icon; }
 
-  void PrintMeasurements()
-  {
+  void PrintMeasurements() {
     std::string header = type_ + " (" + name_ + ")";
     meas_transform_.printInfo(node_->get_logger(), header + " Transform()");
     meas_paint_.printInfo(node_->get_logger(), header + " Paint()");
     meas_draw_.printInfo(node_->get_logger(), header + " Draw()");
   }
 
-  void PrintErrorHelper(
-    QLabel *status_label,
-    const std::string& message,
-    double throttle = 0.0);
-  void PrintInfoHelper(
-    QLabel *status_label,
-    const std::string& message,
-    double throttle = 0.0);
-  void PrintWarningHelper(
-    QLabel *status_label,
-    const std::string& message,
-    double throttle = 0.0);
+  void PrintErrorHelper(QLabel* status_label, const std::string& message,
+                        double throttle = 0.0);
+  void PrintInfoHelper(QLabel* status_label, const std::string& message,
+                       double throttle = 0.0);
+  void PrintWarningHelper(QLabel* status_label, const std::string& message,
+                          double throttle = 0.0);
 
-public Q_SLOTS:
+ public Q_SLOTS:
   virtual void DrawIcon() {}
 
   /**
    * Override this to return "true" if you want QPainter support for your
    * plugin.
    */
-  virtual bool SupportsPainting()
-  {
-    return false;
-  }
+  virtual bool SupportsPainting() { return false; }
 
-Q_SIGNALS:
+ Q_SIGNALS:
   void DrawOrderChanged(int draw_order);
   void SizeChanged();
   void TargetFrameChanged(const std::string& target_frame);
   void UseLatestTransformsChanged(bool use_latest_transforms);
   void VisibleChanged(bool visible);
 
-
-protected:
+ protected:
   bool initialized_;
   bool visible_;
 
@@ -305,67 +267,64 @@ protected:
 
   virtual bool Initialize(QOpenGLWidget* canvas) = 0;
 
-  MapvizPlugin() :
-    initialized_(false),
-    visible_(true),
-    canvas_(nullptr),
-    icon_(nullptr),
-    node_(nullptr),
-    tf_(),
-    target_frame_(""),
-    source_frame_(""),
-    use_latest_transforms_(false),
-    draw_order_(0)
-  {}
+  MapvizPlugin()
+      : initialized_(false),
+        visible_(true),
+        canvas_(nullptr),
+        icon_(nullptr),
+        node_(nullptr),
+        tf_(),
+        target_frame_(""),
+        source_frame_(""),
+        use_latest_transforms_(false),
+        draw_order_(0) {}
 
-  void LoadQosConfig(const YAML::Node& node, rmw_qos_profile_t& qos, const std::string prefix = "") const
-  {
-    if (node[prefix + "qos_depth"])
-    {
+  void LoadQosConfig(const YAML::Node& node, rmw_qos_profile_t& qos,
+                     const std::string prefix = "") const {
+    if (node[prefix + "qos_depth"]) {
       qos.depth = node[prefix + "qos_depth"].as<int>();
     }
 
-    if (node[prefix + "qos_history"])
-    {
-      qos.history = static_cast<rmw_qos_history_policy_e>(node[prefix + "qos_history"].as<int>());
+    if (node[prefix + "qos_history"]) {
+      qos.history = static_cast<rmw_qos_history_policy_e>(
+          node[prefix + "qos_history"].as<int>());
     }
 
-    if (node[prefix + "qos_reliability"])
-    {
-      qos.reliability = static_cast<rmw_qos_reliability_policy_e>(node[prefix + "qos_reliability"].as<int>());
+    if (node[prefix + "qos_reliability"]) {
+      qos.reliability = static_cast<rmw_qos_reliability_policy_e>(
+          node[prefix + "qos_reliability"].as<int>());
     }
 
-    if (node[prefix + "qos_durability"])
-    {
-      qos.durability = static_cast<rmw_qos_durability_policy_e>(node[prefix + "qos_durability"].as<int>());
+    if (node[prefix + "qos_durability"]) {
+      qos.durability = static_cast<rmw_qos_durability_policy_e>(
+          node[prefix + "qos_durability"].as<int>());
     }
   }
 
-  void SaveQosConfig(YAML::Emitter& emitter, const rmw_qos_profile_t& qos, const std::string prefix = "") const
-  {
+  void SaveQosConfig(YAML::Emitter& emitter, const rmw_qos_profile_t& qos,
+                     const std::string prefix = "") const {
     emitter << YAML::Key << prefix + "qos_depth" << YAML::Value << qos.depth;
-    emitter << YAML::Key << prefix + "qos_history" << YAML::Value << qos.history;
-    emitter << YAML::Key << prefix + "qos_reliability" << YAML::Value << qos.reliability;
-    emitter << YAML::Key << prefix + "qos_durability" << YAML::Value << qos.durability;
+    emitter << YAML::Key << prefix + "qos_history" << YAML::Value
+            << qos.history;
+    emitter << YAML::Key << prefix + "qos_reliability" << YAML::Value
+            << qos.reliability;
+    emitter << YAML::Key << prefix + "qos_durability" << YAML::Value
+            << qos.durability;
   }
 
   // Dealing with YAML frequently requires trimming whitespace from strings
-  inline std::string TrimString(const std::string& str)
-  {
+  inline std::string TrimString(const std::string& str) {
     auto begin = str.begin();
     auto end = str.end();
 
     // Trim leading whitespace
-    while (begin != end && std::isspace(*begin))
-    {
+    while (begin != end && std::isspace(*begin)) {
       ++begin;
     }
 
     // Trim trailing whitespace
-    if (begin != end)
-    {
-      do
-      {
+    if (begin != end) {
+      do {
         --end;
       } while (std::isspace(*end));
       ++end;
@@ -374,7 +333,7 @@ protected:
     return std::string(begin, end);
   }
 
-private:
+ private:
   // Collect basic profiling info to know how much time each plugin
   // spends in Transform(), Paint(), and Draw().
   Stopwatch meas_transform_;
@@ -384,64 +343,63 @@ private:
 typedef std::shared_ptr<MapvizPlugin> MapvizPluginPtr;
 
 // Implementation
-inline void MapvizPlugin::PrintErrorHelper(QLabel *status_label, const std::string &message,
-                                            double throttle)
-{
-    if (message == status_label->text().toStdString()) {
-      return;
-    }
+inline void MapvizPlugin::PrintErrorHelper(QLabel* status_label,
+                                           const std::string& message,
+                                           double throttle) {
+  if (message == status_label->text().toStdString()) {
+    return;
+  }
 
-    auto logger = node_ ? node_->get_logger() : rclcpp::get_logger("mapviz");
-    if (throttle > 0.0) {
-        RCLCPP_ERROR(logger, "Error: %s", message.c_str());
-    } else {
-        RCLCPP_ERROR(logger, "%s", message.c_str());
-    }
-    QPalette p(status_label->palette());
-    p.setColor(QPalette::Text, Qt::red);
-    status_label->setPalette(p);
-    status_label->setText(message.c_str());
+  auto logger = node_ ? node_->get_logger() : rclcpp::get_logger("mapviz");
+  if (throttle > 0.0) {
+    RCLCPP_ERROR(logger, "Error: %s", message.c_str());
+  } else {
+    RCLCPP_ERROR(logger, "%s", message.c_str());
+  }
+  QPalette p(status_label->palette());
+  p.setColor(QPalette::Text, Qt::red);
+  status_label->setPalette(p);
+  status_label->setText(message.c_str());
 }
 
-inline void MapvizPlugin::PrintInfoHelper(QLabel *status_label, const std::string &message,
-                                          double throttle)
-{
-    if (message == status_label->text().toStdString()) {
-      return;
-    }
+inline void MapvizPlugin::PrintInfoHelper(QLabel* status_label,
+                                          const std::string& message,
+                                          double throttle) {
+  if (message == status_label->text().toStdString()) {
+    return;
+  }
 
-    auto logger = node_ ? node_->get_logger() : rclcpp::get_logger("mapviz");
-    if (throttle > 0.0) {
-        RCLCPP_INFO(logger, "%s", message.c_str());
-    } else {
-        RCLCPP_INFO(logger, "%s", message.c_str());
-    }
-    QPalette p(status_label->palette());
-    p.setColor(QPalette::Text, Qt::darkGreen);
-    status_label->setPalette(p);
-    status_label->setText(message.c_str());
+  auto logger = node_ ? node_->get_logger() : rclcpp::get_logger("mapviz");
+  if (throttle > 0.0) {
+    RCLCPP_INFO(logger, "%s", message.c_str());
+  } else {
+    RCLCPP_INFO(logger, "%s", message.c_str());
+  }
+  QPalette p(status_label->palette());
+  p.setColor(QPalette::Text, Qt::darkGreen);
+  status_label->setPalette(p);
+  status_label->setText(message.c_str());
 }
 
-inline void MapvizPlugin::PrintWarningHelper(QLabel *status_label, const std::string &message,
-                                              double throttle)
-{
-    if (message == status_label->text().toStdString()) {
-      return;
-    }
+inline void MapvizPlugin::PrintWarningHelper(QLabel* status_label,
+                                             const std::string& message,
+                                             double throttle) {
+  if (message == status_label->text().toStdString()) {
+    return;
+  }
 
-    auto logger = node_ ? node_->get_logger() : rclcpp::get_logger("mapviz");
-    if (throttle > 0.0) {
-        RCLCPP_WARN(logger, "%s", message.c_str());
-    } else {
-        RCLCPP_WARN(logger, "%s", message.c_str());
-    }
-    QPalette p(status_label->palette());
-    p.setColor(QPalette::Text, Qt::darkYellow);
-    status_label->setPalette(p);
-    status_label->setText(message.c_str());
+  auto logger = node_ ? node_->get_logger() : rclcpp::get_logger("mapviz");
+  if (throttle > 0.0) {
+    RCLCPP_WARN(logger, "%s", message.c_str());
+  } else {
+    RCLCPP_WARN(logger, "%s", message.c_str());
+  }
+  QPalette p(status_label->palette());
+  p.setColor(QPalette::Text, Qt::darkYellow);
+  status_label->setPalette(p);
+  status_label->setText(message.c_str());
 }
 
-}   // namespace mapviz
+}  // namespace mapviz
 
 #endif  // MAPVIZ__MAPVIZ_PLUGIN_HPP_
-

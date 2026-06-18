@@ -31,11 +31,12 @@
 #define MAPVIZ__RQT_MAPVIZ_HPP_
 
 /*
- * The RQT GUI CPP files use the Qt macros "slots" and "signals".  These conflict
- * with Boost macros of the same name; normally we fix this by adding "-DQT_NO_KEYWORDS"
- * in our CMakeLists file, then using Q_SLOTS and Q_SIGNALS in our source code instead.
- * Since we can't edit the ROS source code, though, we need to define those macros before
- * we include the ROS headers and then undefine them afterwards.
+ * The RQT GUI CPP files use the Qt macros "slots" and "signals".  These
+ * conflict with Boost macros of the same name; normally we fix this by adding
+ * "-DQT_NO_KEYWORDS" in our CMakeLists file, then using Q_SLOTS and Q_SIGNALS
+ * in our source code instead. Since we can't edit the ROS source code, though,
+ * we need to define those macros before we include the ROS headers and then
+ * undefine them afterwards.
  */
 #ifdef slots
 #pragma push_macro("slots")
@@ -71,24 +72,21 @@
 
 #include "mapviz.hpp"
 
-namespace mapviz
-{
-class RqtMapviz : public rqt_gui_cpp::Plugin
-{
-Q_OBJECT
-public:
+namespace mapviz {
+class RqtMapviz : public rqt_gui_cpp::Plugin {
+  Q_OBJECT
+ public:
   RqtMapviz();
   virtual void initPlugin(qt_gui_cpp::PluginContext& context);
   virtual void shutdownPlugin();
-  virtual void saveSettings(
-    qt_gui_cpp::Settings& plugin_settings,
-    qt_gui_cpp::Settings& instance_settings) const;
-  virtual void restoreSettings(
-    const qt_gui_cpp::Settings& plugin_settings,
-    const qt_gui_cpp::Settings& instance_settings);
-private:
+  virtual void saveSettings(qt_gui_cpp::Settings& plugin_settings,
+                            qt_gui_cpp::Settings& instance_settings) const;
+  virtual void restoreSettings(const qt_gui_cpp::Settings& plugin_settings,
+                               const qt_gui_cpp::Settings& instance_settings);
+
+ private:
   Mapviz* widget_;
 };
-}   // namespace mapviz
+}  // namespace mapviz
 
 #endif  // MAPVIZ__RQT_MAPVIZ_HPP_

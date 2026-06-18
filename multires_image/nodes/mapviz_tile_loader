@@ -8,10 +8,11 @@
 import fnmatch
 import math
 import os
+from collections import namedtuple
+
 import pyproj
 import rospy
 import yaml
-from collections import namedtuple
 from geometry_msgs.msg import PoseStamped
 from gps_common.msg import GPSFix
 from mapviz.srv import AddMapvizDisplay, AddMapvizDisplayRequest
