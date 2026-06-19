@@ -66,7 +66,6 @@
 #include <QEvent>
 #include <QHBoxLayout>
 #include <QPainter>
-#include <QTimer>
 #include <QVBoxLayout>
 
 // Other Project libraries
@@ -93,9 +92,9 @@ namespace mapviz
 constexpr int VERTICAL_LABEL_PADDING_VERTICAL = 4;
 constexpr int VERTICAL_LABEL_PADDING_HORIZONTAL = 8;
 
-// Minimum width for config panel when pinned. Set to 332 pixels to accommodate
-// the UI layout including labels, spinboxes, and buttons while maintaining
-// usability with reasonable display resolutions and DPI scaling
+// Minimum width for config panel when pinned. Set to 332 pixels to match
+// the UI default layout including labels, spinboxes, and buttons while
+// maintaining usability with reasonable display resolutions and DPI scaling
 constexpr int CONFIG_PANEL_PINNED_WIDTH = 332;
 // Minimum width for collapsed state, set to accommodate the vertical label 
 constexpr int CONFIG_PANEL_COLLAPSED_WIDTH = 28;  
@@ -717,6 +716,16 @@ void Mapviz::Open(const std::string& filename)
       ui_.actionShow_Capture_Tools->setChecked(show_capture_tools);
     }
 
+    if (doc["panel_width"]) {
+      int panel_width = doc["panel_width"].as<int>();
+      if (panel_width >= CONFIG_PANEL_PINNED_WIDTH) {
+        pinned_panel_width_ = panel_width;
+        ui_.configdock->setMinimumWidth(panel_width);
+        resizeDocks({ui_.configdock}, {panel_width}, Qt::Horizontal);
+        ui_.configdock->setMinimumWidth(CONFIG_PANEL_PINNED_WIDTH);
+      }
+    }
+
     if (doc["window_width"]) {
       int window_width = doc["window_width"].as<int>();
       resize(window_width, height());
@@ -725,15 +734,6 @@ void Mapviz::Open(const std::string& filename)
     if (doc["window_height"]) {
       int window_height = doc["window_height"].as<int>();
       resize(width(), window_height);
-    }
-
-    if (doc["panel_width"]) {
-      int panel_width = doc["panel_width"].as<int>();
-      if (panel_width >= CONFIG_PANEL_PINNED_WIDTH) {
-        QTimer::singleShot(0, this, [this, panel_width]() {
-          resizeDocks({ui_.configdock}, {panel_width}, Qt::Horizontal);
-        });
-      }
     }
 
     if (doc["view_scale"]) {
@@ -1399,17 +1399,18 @@ void Mapviz::TogglePinConfigPanel(bool pinned)
   config_panel_pinned_ = pinned;
   if (pinned) {
     pin_button_->setToolTip("Panel pinned (click to auto-hide)");
-    // Restore full dock
+    // Restore full dock — set minimum to target width directly so the dock
+    // jumps from collapsed width to final width in one step (no intermediate flash)
+    const int target = std::max(pinned_panel_width_, CONFIG_PANEL_PINNED_WIDTH);
     title_label_->setText("Config");
     ui_.configdock->setMaximumWidth(QWIDGETSIZE_MAX);
-    ui_.configdock->setMinimumWidth(CONFIG_PANEL_PINNED_WIDTH);
+    ui_.configdock->setMinimumWidth(target);
     collapsed_label_->setVisible(false);
     ui_.widget_2->show();
     ui_.configs->show();
     ui_.widget->show();
-    resizeDocks({ui_.configdock},
-                {std::max(pinned_panel_width_, CONFIG_PANEL_PINNED_WIDTH)},
-                Qt::Horizontal);
+    resizeDocks({ui_.configdock}, {target}, Qt::Horizontal);
+    ui_.configdock->setMinimumWidth(CONFIG_PANEL_PINNED_WIDTH);
   } else {
     pinned_panel_width_ = ui_.configdock->width();
     pin_button_->setToolTip("Panel unpinned (click to pin)");
@@ -1754,17 +1755,18 @@ bool Mapviz::eventFilter(QObject* object, QEvent* event)
 {
   if (object == ui_.configdock && !config_panel_pinned_) {
     if (event->type() == QEvent::Enter) {
-      // Expand on mouse enter
+      // Expand on mouse enter — set minimum to target width directly so the dock
+      // jumps from collapsed width to final width in one step (no intermediate flash)
+      const int target = std::max(pinned_panel_width_, CONFIG_PANEL_PINNED_WIDTH);
       title_label_->setText("Config");
       ui_.configdock->setMaximumWidth(QWIDGETSIZE_MAX);
-      ui_.configdock->setMinimumWidth(CONFIG_PANEL_PINNED_WIDTH);
+      ui_.configdock->setMinimumWidth(target);
       collapsed_label_->setVisible(false);
       ui_.widget_2->show();
       ui_.configs->show();
       ui_.widget->show();
-      resizeDocks({ui_.configdock},
-                  {std::max(pinned_panel_width_, CONFIG_PANEL_PINNED_WIDTH)},
-                  Qt::Horizontal);
+      resizeDocks({ui_.configdock}, {target}, Qt::Horizontal);
+      ui_.configdock->setMinimumWidth(CONFIG_PANEL_PINNED_WIDTH);
     } else if (event->type() == QEvent::Leave) {
       // Collapse on mouse leave
       title_label_->setText("");
