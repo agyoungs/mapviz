@@ -1271,7 +1271,7 @@ MapvizPluginPtr Mapviz::CreateNewDisplay(
   config_item->SetType(pretty_type);
   QListWidgetItem* item = new PluginConfigListItem();
   config_item->SetListItem(item);
-  item->setSizeHint(config_item->sizeHint());
+  item->setSizeHint(QSize(0, config_item->sizeHint().height()));
   connect(config_item, SIGNAL(UpdateSizeHint()), this, SLOT(UpdateSizeHints()));
   connect(
     config_item,
@@ -1599,7 +1599,7 @@ void Mapviz::UpdateSizeHints()
       // Make sure the ConfigItem in the QListWidgetItem we're getting really
       // exists; if this method is called before it's been initialized, it would
       // cause a crash.
-      item->setSizeHint(widget->sizeHint());
+      item->setSizeHint(QSize(0, widget->sizeHint().height()));
     }
   }
 }
