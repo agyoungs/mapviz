@@ -66,6 +66,7 @@
 #include <QEvent>
 #include <QHBoxLayout>
 #include <QPainter>
+#include <QTimer>
 #include <QVBoxLayout>
 
 // Other Project libraries
@@ -178,11 +179,6 @@ Mapviz::Mapviz(bool is_standalone, int argc, char** argv, QWidget *parent, Qt::W
     title_layout->setContentsMargins(4, 0, 4, 0);
     title_layout->setSpacing(4);
 
-    title_label_ = new QLabel("Config", title_bar);
-    title_label_->setStyleSheet("font-weight: bold;");
-    title_layout->addWidget(title_label_);
-    title_layout->addStretch();
-
     pin_button_ = new QToolButton(title_bar);
     pin_button_->setCheckable(true);
     pin_button_->setChecked(true);
@@ -196,6 +192,11 @@ Mapviz::Mapviz(bool is_standalone, int argc, char** argv, QWidget *parent, Qt::W
       pin_button_->setText("\xF0\x9F\x93\x8C");  // pin emoji as fallback
     }
     title_layout->addWidget(pin_button_);
+
+    title_label_ = new QLabel("Config", title_bar);
+    title_label_->setStyleSheet("font-weight: bold;");
+    title_layout->addWidget(title_label_);
+    title_layout->addStretch();
 
     title_bar->setLayout(title_layout);
     ui_.configdock->setTitleBarWidget(title_bar);
@@ -726,6 +727,15 @@ void Mapviz::Open(const std::string& filename)
       resize(width(), window_height);
     }
 
+    if (doc["panel_width"]) {
+      int panel_width = doc["panel_width"].as<int>();
+      if (panel_width >= CONFIG_PANEL_PINNED_WIDTH) {
+        QTimer::singleShot(0, this, [this, panel_width]() {
+          resizeDocks({ui_.configdock}, {panel_width}, Qt::Horizontal);
+        });
+      }
+    }
+
     if (doc["view_scale"]) {
       float scale = doc["view_scale"].as<float>();
       canvas_->SetViewScale(scale);
@@ -886,6 +896,9 @@ void Mapviz::Save(const std::string& filename)
       << ui_.actionShow_Capture_Tools->isChecked();
   out << YAML::Key << "window_width" << YAML::Value << width();
   out << YAML::Key << "window_height" << YAML::Value << height();
+  if (config_panel_pinned_) {
+    out << YAML::Key << "panel_width" << YAML::Value << ui_.configdock->width();
+  }
   out << YAML::Key << "view_scale" << YAML::Value << canvas_->ViewScale();
   out << YAML::Key << "offset_x" << YAML::Value << canvas_->OffsetX();
   out << YAML::Key << "offset_y" << YAML::Value << canvas_->OffsetY();
@@ -1258,7 +1271,7 @@ MapvizPluginPtr Mapviz::CreateNewDisplay(
   config_item->SetType(pretty_type);
   QListWidgetItem* item = new PluginConfigListItem();
   config_item->SetListItem(item);
-  item->setSizeHint(config_item->sizeHint());
+  item->setSizeHint(QSize(0, config_item->sizeHint().height()));
   connect(config_item, SIGNAL(UpdateSizeHint()), this, SLOT(UpdateSizeHints()));
   connect(
     config_item,
@@ -1394,7 +1407,11 @@ void Mapviz::TogglePinConfigPanel(bool pinned)
     ui_.widget_2->show();
     ui_.configs->show();
     ui_.widget->show();
+    resizeDocks({ui_.configdock},
+                {std::max(pinned_panel_width_, CONFIG_PANEL_PINNED_WIDTH)},
+                Qt::Horizontal);
   } else {
+    pinned_panel_width_ = ui_.configdock->width();
     pin_button_->setToolTip("Panel unpinned (click to pin)");
     // Collapse to narrow strip with vertical label
     title_label_->setText("");
@@ -1584,7 +1601,7 @@ void Mapviz::UpdateSizeHints()
       // Make sure the ConfigItem in the QListWidgetItem we're getting really
       // exists; if this method is called before it's been initialized, it would
       // cause a crash.
-      item->setSizeHint(widget->sizeHint());
+      item->setSizeHint(QSize(0, widget->sizeHint().height()));
     }
   }
 }
@@ -1745,6 +1762,9 @@ bool Mapviz::eventFilter(QObject* object, QEvent* event)
       ui_.widget_2->show();
       ui_.configs->show();
       ui_.widget->show();
+      resizeDocks({ui_.configdock},
+                  {std::max(pinned_panel_width_, CONFIG_PANEL_PINNED_WIDTH)},
+                  Qt::Horizontal);
     } else if (event->type() == QEvent::Leave) {
       // Collapse on mouse leave
       title_label_->setText("");
