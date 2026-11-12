@@ -194,8 +194,11 @@ private:
 
   void processMarker(const visualization_msgs::msg::Marker & marker);
   void connectCallback(const std::string & topic, const rmw_qos_profile_t & qos);
-  std::string advertisedType(const std::vector<rclcpp::TopicEndpointInfo> & publishers) const;
-  void reportUnsupportedType(const std::vector<rclcpp::TopicEndpointInfo> & publishers);
+  std::string subscribedType();
+  std::string advertisedType(
+    const std::vector<rclcpp::TopicEndpointInfo> & publishers,
+    const std::string & subscribed) const;
+  bool reportUnsupportedType(const std::vector<rclcpp::TopicEndpointInfo> & publishers);
   void transformArrow(
     MarkerData & markerData,
     const swri_transform_util::Transform & transform);
