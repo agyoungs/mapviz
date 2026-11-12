@@ -796,6 +796,10 @@ void MarkerPlugin::LoadConfig(const YAML::Node & node, const std::string & /*pat
   }
   if (node["message_type"]) {
     message_type_ = TrimString(node["message_type"].as<std::string>());
+  } else if (node["topic"] && TrimString(node["topic"].as<std::string>()) != topic_) {
+    // AddMapvizDisplay reloads an existing display: a different topic's type is unknown
+    // until it is looked up, like a typed-in topic.
+    message_type_.clear();
   }
   if (node["topic"]) {
     std::string topic = TrimString(node["topic"].as<std::string>());

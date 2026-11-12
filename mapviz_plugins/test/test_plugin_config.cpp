@@ -791,6 +791,37 @@ TEST(MarkerType, SwitchesTwoDisplaysOnOneTopic)
   context->shutdown("test finished");
 }
 
+TEST(MarkerType, ForgetsTheTypeWhenAReloadChangesTheTopic)
+{
+  // AddMapvizDisplay on an existing display reloads its config. A new topic without
+  // message_type must not inherit the old topic's type.
+  const std::string topic = "/test_marker_type/reloaded";
+  mapviz_plugins::MarkerPlugin plugin;
+  plugin.SetNode(*g_node);
+  SaveAfterLoading(
+    plugin,
+    "topic: /test_marker_type/before_reload\n"
+    "message_type: visualization_msgs/msg/MarkerArray\n");
+
+  YAML::Node saved = SaveAfterLoading(plugin, "topic: " + topic + "\n");
+
+  EXPECT_FALSE(saved["message_type"]);
+  EXPECT_TRUE(HasNoSubscribers(topic));  // waits for the topic to be advertised
+}
+
+TEST(MarkerType, KeepsTheTypeWhenAReloadKeepsTheTopic)
+{
+  const std::string topic = "/test_marker_type/reloaded_same";
+  mapviz_plugins::MarkerPlugin plugin;
+  plugin.SetNode(*g_node);
+  SaveAfterLoading(
+    plugin, "topic: " + topic + "\nmessage_type: visualization_msgs/msg/MarkerArray\n");
+
+  YAML::Node saved = SaveAfterLoading(plugin, "topic: " + topic + "\n");
+
+  EXPECT_EQ("visualization_msgs/msg/MarkerArray", saved["message_type"].as<std::string>(""));
+}
+
 TEST(MarkerType, ReportsAnUnsupportedPublishedType)
 {
   const std::string topic = "/test_marker_type/unsupported";
