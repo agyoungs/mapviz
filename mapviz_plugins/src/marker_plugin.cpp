@@ -132,26 +132,43 @@ void MarkerPlugin::connectCallback(const std::string & topic, const rmw_qos_prof
 
   marker_sub_.reset();
   marker_array_sub_.reset();
-  if (!topic_.empty()) {
-    // ROS 2 does not allow for a simple way to subscribe to a general type of message
-    // (i.e. Marker and MarkerArray). That would require a way to de-serialize the data
-    // for mapviz to consume (based on message type).
-    // Subscribe with message_type_: the advertised type if the topic is advertised, else
-    // the saved one (mapviz started before its publisher), which connects when the topic
-    // appears like any typed subscription. timerEvent() switches to the advertised type if
-    // the saved one turns out to be wrong, and subscribes once the topic is advertised if
-    // there is no type yet.
-    const std::string advertised = advertisedType();
-    if (!advertised.empty()) {
-      message_type_ = advertised;
-    }
-    if (message_type_.empty()) {
-      RCLCPP_WARN(
-        Logger(),
-        "Topic %s is not advertised yet; subscribing once it is.", topic_.c_str());
-      return;
-    }
-    const std::string & topic_type = message_type_;
+  const bool retrying = resubscribe_;
+  resubscribe_ = false;
+  if (topic_.empty()) {
+    return;
+  }
+
+  // ROS 2 does not allow for a simple way to subscribe to a general type of message
+  // (i.e. Marker and MarkerArray). That would require a way to de-serialize the data
+  // for mapviz to consume (based on message type).
+  // Subscribe with message_type_: the advertised type if the topic is advertised, else
+  // the saved one (mapviz started before its publisher), which connects when the topic
+  // appears like any typed subscription. timerEvent() switches to the advertised type if
+  // the saved one turns out to be wrong, and subscribes once the topic is advertised if
+  // there is no type yet.
+  std::vector<rclcpp::TopicEndpointInfo> topic_publishers;
+  try {
+    topic_publishers = publishers();
+  } catch (const rclcpp::exceptions::NameValidationError & e) {
+    ReportInvalidName(e);  // nothing to subscribe to until the name is corrected
+    return;
+  }
+  const std::string advertised = advertisedType(topic_publishers);
+  if (!advertised.empty()) {
+    message_type_ = advertised;
+  } else {
+    reportUnsupportedType(topic_publishers);
+  }
+  if (message_type_.empty()) {
+    RCLCPP_WARN(
+      Logger(),
+      "Topic %s is not advertised as %s or %s yet; subscribing once it is.",
+      topic_.c_str(), kMarkerType, kMarkerArrayType);
+    return;
+  }
+
+  const std::string & topic_type = message_type_;
+  try {
     if (topic_type == kMarkerType) {
       // Subscribe() delivers each message to handleMarker() on the GUI
       // thread, where plugin state may be touched without locking.
@@ -173,23 +190,38 @@ void MarkerPlugin::connectCallback(const std::string & topic, const rmw_qos_prof
         topic_.c_str(), topic_type.c_str());
       return;
     }
+  } catch (const std::exception & e) {
+    // Some middlewares (Fast DDS) refuse a subscription whose type differs from one this
+    // process already has on the topic: another display still subscribed with the old
+    // type, or this display's previous subscription while the executor still holds it.
+    // Both clear up, so try again from the next timer tick.
+    marker_sub_.reset();
+    marker_array_sub_.reset();
+    resubscribe_ = true;
+    PrintError(
+      "Unable to subscribe to " + topic_ + " as " + topic_type + ", retrying: " + e.what());
+    return;
+  }
 
-    RCLCPP_INFO(Logger(), "Subscribing to %s (%s)", topic_.c_str(), topic_type.c_str());
+  RCLCPP_INFO(Logger(), "Subscribing to %s (%s)", topic_.c_str(), topic_type.c_str());
+  if (retrying && !has_message_) {
+    PrintWarning("No messages received.");  // replaces the failed attempt's error
   }
 }
 
-std::string MarkerPlugin::advertisedType()
+std::vector<rclcpp::TopicEndpointInfo> MarkerPlugin::publishers()
+{
+  // Throws rclcpp::exceptions::NameValidationError for a name ROS rejects.
+  return NodeUnsafe()->get_publishers_info_by_topic(topic_);
+}
+
+std::string MarkerPlugin::advertisedType(
+  const std::vector<rclcpp::TopicEndpointInfo> & publishers) const
 {
   // The Marker or MarkerArray type the topic is published with; empty if nothing publishes
   // it as either. Only publishers count: the topic list also carries the types of
   // subscriptions, including this plugin's own while it waits with a stale saved type,
   // which would hide the type the topic is really published with.
-  std::vector<rclcpp::TopicEndpointInfo> publishers;
-  try {
-    publishers = NodeUnsafe()->get_publishers_info_by_topic(topic_);
-  } catch (const std::exception &) {
-    return "";  // a name ROS rejects; Subscribe() reports it
-  }
   std::string advertised;
   for (const auto & publisher : publishers) {
     const std::string & type = publisher.topic_type();
@@ -204,6 +236,17 @@ std::string MarkerPlugin::advertisedType()
     }
   }
   return advertised;
+}
+
+void MarkerPlugin::reportUnsupportedType(
+  const std::vector<rclcpp::TopicEndpointInfo> & publishers)
+{
+  // Published, but as neither Marker nor MarkerArray: say so rather than wait silently.
+  if (!publishers.empty()) {
+    PrintError(
+      "Topic " + topic_ + " is published as " + publishers.front().topic_type() +
+      ", not " + kMarkerType + " or " + kMarkerArrayType + ".");
+  }
 }
 
 void MarkerPlugin::handleMarker(const visualization_msgs::msg::Marker::ConstSharedPtr marker)
@@ -804,8 +847,22 @@ void MarkerPlugin::timerEvent([[maybe_unused]] QTimerEvent * event)
   if (matched || topic_.empty()) {
     return;
   }
-  const std::string advertised = advertisedType();
-  if (advertised.empty() || advertised == message_type_) {
+  if (resubscribe_) {
+    connectCallback(topic_, qos_);
+    return;
+  }
+  std::vector<rclcpp::TopicEndpointInfo> topic_publishers;
+  try {
+    topic_publishers = publishers();
+  } catch (const rclcpp::exceptions::NameValidationError &) {
+    return;  // connectCallback() reported it
+  }
+  const std::string advertised = advertisedType(topic_publishers);
+  if (advertised.empty()) {
+    reportUnsupportedType(topic_publishers);
+    return;
+  }
+  if (advertised == message_type_) {
     return;
   }
   if (!message_type_.empty()) {

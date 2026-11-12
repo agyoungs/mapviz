@@ -752,6 +752,84 @@ TEST(MarkerType, CorrectsASavedMarkerArrayTypeToMarker)
     "visualization_msgs/msg/MarkerArray", "visualization_msgs/msg/Marker");
 }
 
+TEST(MarkerType, SwitchesTwoDisplaysOnOneTopic)
+{
+  // Two displays saved as Marker on a topic now published as MarkerArray. Fast DDS refuses
+  // the first display's MarkerArray subscription while the second still subscribes as
+  // Marker; the first retries once the second has switched too.
+  const std::string topic = "/test_marker_type/two_displays";
+  auto context = std::make_shared<rclcpp::Context>();
+  context->init(0, nullptr);
+  auto publisher_node = std::make_shared<rclcpp::Node>(
+    "test_marker_type_publisher", rclcpp::NodeOptions().context(context));
+
+  YAML::Node config;
+  config["topic"] = topic;
+  config["message_type"] = "visualization_msgs/msg/Marker";
+  mapviz_plugins::MarkerPlugin first;
+  first.SetNode(*g_node);
+  first.LoadConfigPlugin(config, "");
+  mapviz_plugins::MarkerPlugin second;
+  second.SetNode(*g_node);
+  second.LoadConfigPlugin(config, "");
+  ASSERT_TRUE(HasSubscribers(topic));
+
+  auto publisher =
+    publisher_node->create_publisher<visualization_msgs::msg::MarkerArray>(topic, 10);
+
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+  while (publisher->get_subscription_count() < 2 &&
+    std::chrono::steady_clock::now() < deadline)
+  {
+    ASSERT_NO_THROW(QCoreApplication::processEvents());
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  EXPECT_EQ(2u, publisher->get_subscription_count());
+
+  publisher.reset();
+  publisher_node.reset();
+  context->shutdown("test finished");
+}
+
+TEST(MarkerType, ReportsAnUnsupportedPublishedType)
+{
+  const std::string topic = "/test_marker_type/unsupported";
+  auto publisher = g_node->create_publisher<std_msgs::msg::String>(topic, 1);
+
+  ErrorCapture<mapviz_plugins::MarkerPlugin> plugin;
+  plugin.SetNode(*g_node);
+  LoadTopic(plugin, "topic", topic);
+
+  // Reported on connecting, or from the 1 s timer if discovery is slower.
+  const auto published_as_string = [&plugin] {
+      for (const std::string & error : plugin.errors) {
+        if (error.find("is published as std_msgs/msg/String") != std::string::npos) {
+          return true;
+        }
+      }
+      return false;
+    };
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
+  while (!published_as_string() && std::chrono::steady_clock::now() < deadline) {
+    QCoreApplication::processEvents();
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  EXPECT_TRUE(published_as_string());
+  EXPECT_EQ(0u, g_node->count_subscribers(topic));
+}
+
+TEST(InvalidNames, MarkerReportsARejectedTopic)
+{
+  // The marker plugin looks the topic's publishers up before it subscribes, so the name is
+  // rejected there rather than in Subscribe().
+  ErrorCapture<mapviz_plugins::MarkerPlugin> plugin;
+  plugin.SetNode(*g_node);
+
+  EXPECT_NO_THROW(LoadTopic(plugin, "topic", "/test_invalid_names/not a marker topic"));
+
+  EXPECT_TRUE(ReportedInvalid(plugin.errors, "topic name"));
+}
+
 int main(int argc, char ** argv)
 {
   // The plugins build QWidget based config panels in their constructors, so a
