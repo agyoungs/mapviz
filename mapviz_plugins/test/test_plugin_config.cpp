@@ -29,6 +29,7 @@
 #include <gtest/gtest.h>
 #include <QApplication>
 #include <QCoreApplication>
+#include <QLineEdit>
 #include <QFont>
 #include <QOpenGLWidget>
 #include <QString>
@@ -691,6 +692,65 @@ TEST_F(MeasuringPluginTest, ShowsNothingForASinglePoint)
   EXPECT_EQ("", LastSegmentText(plugin));
 }
 
+/// Records the marker plugin's status line.
+class MarkerStatus : public mapviz_plugins::MarkerPlugin
+{
+public:
+  void PrintError(const std::string & message) override
+  {
+    status = "error: " + message;
+    ++errors;
+    MarkerPlugin::PrintError(message);
+  }
+  void PrintWarning(const std::string & message) override
+  {
+    status = "warning: " + message;
+    MarkerPlugin::PrintWarning(message);
+  }
+  void PrintInfo(const std::string & message) override
+  {
+    status = "info: " + message;
+    MarkerPlugin::PrintInfo(message);
+  }
+
+  std::string status;
+  int errors = 0;
+};
+
+/// Runs the Qt event loop, and so the plugins' 1 s timers, until @p done or @p timeout.
+::testing::AssertionResult ProcessEventsUntil(
+  const std::function<bool()> & done, std::chrono::milliseconds timeout)
+{
+  const auto deadline = std::chrono::steady_clock::now() + timeout;
+  while (!done()) {
+    if (std::chrono::steady_clock::now() > deadline) {
+      return ::testing::AssertionFailure() << "timed out";
+    }
+    try {
+      QCoreApplication::processEvents();
+    } catch (const std::exception & e) {
+      return ::testing::AssertionFailure() << "an event handler threw: " << e.what();
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  return ::testing::AssertionSuccess();
+}
+
+/// Runs the Qt event loop for @p duration; fails if an event handler throws.
+::testing::AssertionResult ProcessEventsFor(std::chrono::milliseconds duration)
+{
+  const auto end = std::chrono::steady_clock::now() + duration;
+  while (std::chrono::steady_clock::now() < end) {
+    try {
+      QCoreApplication::processEvents();
+    } catch (const std::exception & e) {
+      return ::testing::AssertionFailure() << "an event handler threw: " << e.what();
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  return ::testing::AssertionSuccess();
+}
+
 /// Loads a marker display saved with @p saved_type while its topic is published
 /// as PublishedT, and waits for the display to switch to the published type.
 template<typename PublishedT>
@@ -750,6 +810,364 @@ TEST(MarkerType, CorrectsASavedMarkerArrayTypeToMarker)
   ExpectMarkerTypeCorrected<visualization_msgs::msg::Marker>(
     "/test_marker_type/saved_marker_array",
     "visualization_msgs/msg/MarkerArray", "visualization_msgs/msg/Marker");
+}
+
+TEST(MarkerType, SwitchesTwoDisplaysOnOneTopic)
+{
+  // Two displays saved as Marker on a topic now published as MarkerArray. The first to
+  // switch waits while the other still subscribes as Marker, then follows it.
+  const std::string topic = "/test_marker_type/two_displays";
+  auto context = std::make_shared<rclcpp::Context>();
+  context->init(0, nullptr);
+  auto publisher_node = std::make_shared<rclcpp::Node>(
+    "test_marker_type_publisher", rclcpp::NodeOptions().context(context));
+
+  YAML::Node config;
+  config["topic"] = topic;
+  config["message_type"] = "visualization_msgs/msg/Marker";
+  MarkerStatus first;
+  first.SetNode(*g_node);
+  first.LoadConfigPlugin(config, "");
+  MarkerStatus second;
+  second.SetNode(*g_node);
+  second.LoadConfigPlugin(config, "");
+  ASSERT_TRUE(HasSubscribers(topic));
+
+  auto publisher =
+    publisher_node->create_publisher<visualization_msgs::msg::MarkerArray>(topic, 10);
+
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+  while (publisher->get_subscription_count() < 2 &&
+    std::chrono::steady_clock::now() < deadline)
+  {
+    ASSERT_NO_THROW(QCoreApplication::processEvents());
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  EXPECT_EQ(2u, publisher->get_subscription_count());
+  // The wait's warning is replaced once subscribed.
+  EXPECT_EQ("warning: No messages received.", first.status);
+  EXPECT_EQ("warning: No messages received.", second.status);
+
+  publisher.reset();
+  publisher_node.reset();
+  context->shutdown("test finished");
+}
+
+TEST(MarkerType, ForgetsTheTypeWhenAReloadChangesTheTopic)
+{
+  // AddMapvizDisplay on an existing display reloads its config. A new topic without
+  // message_type must not inherit the old topic's type.
+  const std::string topic = "/test_marker_type/reloaded";
+  mapviz_plugins::MarkerPlugin plugin;
+  plugin.SetNode(*g_node);
+  SaveAfterLoading(
+    plugin,
+    "topic: /test_marker_type/before_reload\n"
+    "message_type: visualization_msgs/msg/MarkerArray\n");
+
+  YAML::Node saved = SaveAfterLoading(plugin, "topic: " + topic + "\n");
+
+  EXPECT_FALSE(saved["message_type"]);
+  EXPECT_TRUE(HasNoSubscribers(topic));  // waits for the topic to be advertised
+}
+
+TEST(MarkerType, KeepsTheTypeWhenAReloadKeepsTheTopic)
+{
+  const std::string topic = "/test_marker_type/reloaded_same";
+  mapviz_plugins::MarkerPlugin plugin;
+  plugin.SetNode(*g_node);
+  SaveAfterLoading(
+    plugin, "topic: " + topic + "\nmessage_type: visualization_msgs/msg/MarkerArray\n");
+
+  YAML::Node saved = SaveAfterLoading(plugin, "topic: " + topic + "\n");
+
+  EXPECT_EQ("visualization_msgs/msg/MarkerArray", saved["message_type"].as<std::string>(""));
+}
+
+TEST(MarkerType, ReportsAnUnsupportedPublishedType)
+{
+  const std::string topic = "/test_marker_type/unsupported";
+  auto publisher = g_node->create_publisher<std_msgs::msg::String>(topic, 1);
+
+  ErrorCapture<mapviz_plugins::MarkerPlugin> plugin;
+  plugin.SetNode(*g_node);
+  LoadTopic(plugin, "topic", topic);
+
+  // Reported on connecting, or from the 1 s timer if discovery is slower.
+  const auto published_as_string = [&plugin] {
+      for (const std::string & error : plugin.errors) {
+        if (error.find("is published as std_msgs/msg/String") != std::string::npos) {
+          return true;
+        }
+      }
+      return false;
+    };
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
+  while (!published_as_string() && std::chrono::steady_clock::now() < deadline) {
+    QCoreApplication::processEvents();
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  EXPECT_TRUE(published_as_string());
+  EXPECT_EQ(0u, g_node->count_subscribers(topic));
+}
+
+TEST(MarkerType, ReportsATopicWithAnUnknownSubstitution)
+{
+  // Name validation accepts "{...}", but expanding an unknown substitution throws.
+  MarkerStatus plugin;
+  plugin.SetNode(*g_node);
+
+  EXPECT_NO_THROW(LoadTopic(plugin, "topic", "/test_marker_type/{unknown}"));
+  EXPECT_EQ(0u, plugin.status.rfind("error: Invalid topic name", 0)) << plugin.status;
+
+  // The timer must not throw either.
+  EXPECT_TRUE(ProcessEventsFor(std::chrono::milliseconds(1500)));
+  EXPECT_EQ(1, plugin.errors);
+}
+
+TEST(MarkerType, ClearsTheUnsupportedTypeErrorOnceAMarkerIsPublished)
+{
+  const std::string topic = "/test_marker_type/unsupported_then_marker";
+  auto string_publisher = g_node->create_publisher<std_msgs::msg::String>(topic, 1);
+
+  MarkerStatus plugin;
+  plugin.SetNode(*g_node);
+  LoadTopic(plugin, "topic", topic);
+  ASSERT_TRUE(
+    ProcessEventsUntil(
+      [&plugin] {return plugin.status.find("is published as std_msgs") != std::string::npos;},
+      std::chrono::seconds(3)));
+
+  string_publisher.reset();
+  auto marker_publisher = g_node->create_publisher<visualization_msgs::msg::Marker>(topic, 1);
+  EXPECT_TRUE(
+    ProcessEventsUntil(
+      [&plugin] {return plugin.status == "warning: No messages received.";},
+      std::chrono::seconds(3))) << plugin.status;
+}
+
+/// Loads a marker display with an invalid QoS @p setting; expects it reported once.
+void ExpectInvalidQosReportedOnce(const std::string & setting)
+{
+  MarkerStatus plugin;
+  plugin.SetNode(*g_node);
+  EXPECT_NO_THROW(
+    plugin.LoadConfigPlugin(
+      YAML::Load(
+        "topic: /test_marker_type/invalid_qos\n"
+        "message_type: visualization_msgs/msg/Marker\n" + setting + "\n"), ""));
+  EXPECT_EQ(0u, plugin.status.rfind("error: Unable to subscribe", 0)) << plugin.status;
+
+  EXPECT_TRUE(ProcessEventsFor(std::chrono::milliseconds(1500)));
+  EXPECT_EQ(1, plugin.errors) << plugin.status;
+}
+
+TEST(MarkerType, DoesNotRetryAnInvalidQosHistory)
+{
+  ExpectInvalidQosReportedOnce("qos_history: 9");  // rejected by rclcpp
+}
+
+TEST(MarkerType, DoesNotRetryAnInvalidQosReliability)
+{
+  ExpectInvalidQosReportedOnce("qos_reliability: 9");  // rejected by rcl
+}
+
+TEST(MarkerType, ReportsAnInvalidQosOnATopicAnotherDisplayLeft)
+{
+  // The other display's released subscription buys one retry, then the error is shown.
+  const std::string topic = "/test_marker_type/left_behind";
+  {
+    mapviz_plugins::MarkerPlugin first;
+    first.SetNode(*g_node);
+    first.LoadConfigPlugin(
+      YAML::Load("topic: " + topic + "\nmessage_type: visualization_msgs/msg/Marker\n"), "");
+  }
+  MarkerStatus second;
+  second.SetNode(*g_node);
+  second.LoadConfigPlugin(
+    YAML::Load(
+      "topic: " + topic + "\nmessage_type: visualization_msgs/msg/MarkerArray\n"
+      "qos_reliability: 9\n"), "");
+
+  EXPECT_TRUE(ProcessEventsFor(std::chrono::milliseconds(2500)));
+  EXPECT_EQ(0u, second.status.rfind("error: Unable to subscribe", 0)) << second.status;
+  EXPECT_EQ(1, second.errors);
+}
+
+TEST(MarkerType, WaitsForAnotherDisplayToReleaseTheTopic)
+{
+  // No publisher, so neither display has a reason to switch type: the second waits rather
+  // than ask the middleware for a second type on the topic (which Fast DDS refuses). It
+  // names the topic relative to the node's namespace, but it is the same topic.
+  const std::string topic = "/test_marker_type/held_by_another";
+  MarkerStatus first;
+  first.SetNode(*g_node);
+  first.LoadConfigPlugin(
+    YAML::Load("topic: " + topic + "\nmessage_type: visualization_msgs/msg/Marker\n"), "");
+  MarkerStatus second;
+  second.SetNode(*g_node);
+  EXPECT_NO_THROW(
+    second.LoadConfigPlugin(
+      YAML::Load(
+        "topic: " + topic.substr(1) + "\nmessage_type: visualization_msgs/msg/MarkerArray\n"),
+      ""));
+  EXPECT_EQ(0u, second.status.rfind("warning: Waiting to subscribe", 0)) << second.status;
+  EXPECT_EQ(0, second.errors);
+
+  first.LoadConfigPlugin(YAML::Load("topic: /test_marker_type/elsewhere\n"), "");
+  EXPECT_TRUE(
+    ProcessEventsUntil(
+      [&topic] {
+        const auto subscriptions = g_node->get_subscriptions_info_by_topic(topic);
+        return subscriptions.size() == 1 &&
+               subscriptions.front().topic_type() == "visualization_msgs/msg/MarkerArray";
+      },
+      std::chrono::seconds(3)));
+  EXPECT_EQ("warning: No messages received.", second.status);
+  EXPECT_EQ(0, second.errors);
+}
+
+TEST(MarkerType, ReportsAnUnsupportedSavedTypeWhileAnotherDisplayHoldsTheTopic)
+{
+  const std::string topic = "/test_marker_type/held_unsupported";
+  mapviz_plugins::MarkerPlugin first;
+  first.SetNode(*g_node);
+  first.LoadConfigPlugin(
+    YAML::Load("topic: " + topic + "\nmessage_type: visualization_msgs/msg/Marker\n"), "");
+  MarkerStatus second;
+  second.SetNode(*g_node);
+  second.LoadConfigPlugin(
+    YAML::Load("topic: " + topic + "\nmessage_type: std_msgs/msg/String\n"), "");
+  EXPECT_EQ(0u, second.status.rfind("error: Unable to subscribe", 0)) << second.status;
+}
+
+TEST(MarkerType, ClearsTheUnsupportedTypeErrorWhenThePublisherGoes)
+{
+  const std::string topic = "/test_marker_type/unsupported_then_gone";
+  auto string_publisher = g_node->create_publisher<std_msgs::msg::String>(topic, 1);
+
+  MarkerStatus plugin;
+  plugin.SetNode(*g_node);
+  LoadTopic(plugin, "topic", topic);
+  ASSERT_TRUE(
+    ProcessEventsUntil(
+      [&plugin] {return plugin.status.find("is published as std_msgs") != std::string::npos;},
+      std::chrono::seconds(3)));
+
+  string_publisher.reset();
+  EXPECT_TRUE(
+    ProcessEventsUntil(
+      [&plugin] {return plugin.status == "warning: No messages received.";},
+      std::chrono::seconds(3))) << plugin.status;
+}
+
+TEST(MarkerType, SavesNoTypeWithoutATopic)
+{
+  mapviz_plugins::MarkerPlugin plugin;
+  plugin.SetNode(*g_node);
+  YAML::Node saved =
+    SaveAfterLoading(plugin, "message_type: visualization_msgs/msg/MarkerArray\n");
+  EXPECT_FALSE(saved["message_type"]);
+}
+
+TEST(MarkerType, JoinsTheTypeAnotherDisplayHoldsWhenBothArePublished)
+{
+  // Each publisher gets a context of its own, as Fast DDS refuses two types on one topic
+  // within a participant.
+  const std::string topic = "/test_marker_type/both_types";
+  auto marker_context = std::make_shared<rclcpp::Context>();
+  marker_context->init(0, nullptr);
+  auto marker_node = std::make_shared<rclcpp::Node>(
+    "test_marker_publisher", rclcpp::NodeOptions().context(marker_context));
+  auto marker_publisher =
+    marker_node->create_publisher<visualization_msgs::msg::Marker>(topic, 10);
+  auto array_context = std::make_shared<rclcpp::Context>();
+  array_context->init(0, nullptr);
+  auto array_node = std::make_shared<rclcpp::Node>(
+    "test_marker_array_publisher", rclcpp::NodeOptions().context(array_context));
+  auto array_publisher =
+    array_node->create_publisher<visualization_msgs::msg::MarkerArray>(topic, 10);
+  ASSERT_TRUE(
+    ProcessEventsUntil(
+      [&topic] {return g_node->count_publishers(topic) == 2;}, std::chrono::seconds(10)));
+
+  mapviz_plugins::MarkerPlugin first;
+  first.SetNode(*g_node);
+  first.LoadConfigPlugin(
+    YAML::Load("topic: " + topic + "\nmessage_type: visualization_msgs/msg/Marker\n"), "");
+  MarkerStatus second;
+  second.SetNode(*g_node);
+  EXPECT_NO_THROW(
+    second.LoadConfigPlugin(
+      YAML::Load("topic: " + topic + "\nmessage_type: visualization_msgs/msg/MarkerArray\n"),
+      ""));
+
+  EXPECT_TRUE(
+    ProcessEventsUntil(
+      [&marker_publisher] {return marker_publisher->get_subscription_count() == 2;},
+      std::chrono::seconds(10))) << second.status;
+
+  marker_publisher.reset();
+  array_publisher.reset();
+  marker_node.reset();
+  array_node.reset();
+  marker_context->shutdown("test finished");
+  array_context->shutdown("test finished");
+}
+
+TEST(MarkerType, SavesNoTypeForATopicStillBeingTypedIn)
+{
+  mapviz_plugins::MarkerPlugin plugin;
+  plugin.SetNode(*g_node);
+  plugin.LoadConfigPlugin(
+    YAML::Load(
+      "topic: /test_marker_type/committed\n"
+      "message_type: visualization_msgs/msg/MarkerArray\n"), "");
+
+  auto * topic_box = plugin.GetConfigWidget(nullptr)->findChild<QLineEdit *>("topic");
+  ASSERT_NE(nullptr, topic_box);
+  topic_box->setText("/test_marker_type/being_typed");
+
+  YAML::Emitter emitter;
+  emitter << YAML::BeginMap;
+  plugin.SaveConfigPlugin(emitter, "");
+  emitter << YAML::EndMap;
+  YAML::Node saved = YAML::Load(emitter.c_str());
+  EXPECT_EQ("/test_marker_type/being_typed", saved["topic"].as<std::string>(""));
+  EXPECT_FALSE(saved["message_type"]);
+}
+
+TEST(MarkerType, ResubscribesWhenAReloadChangesOnlyTheType)
+{
+  const std::string topic = "/test_marker_type/type_only_reload";
+  mapviz_plugins::MarkerPlugin plugin;
+  plugin.SetNode(*g_node);
+  plugin.LoadConfigPlugin(
+    YAML::Load("topic: " + topic + "\nmessage_type: visualization_msgs/msg/MarkerArray\n"),
+    "");
+
+  plugin.LoadConfigPlugin(YAML::Load("message_type: visualization_msgs/msg/Marker\n"), "");
+
+  EXPECT_TRUE(
+    ProcessEventsUntil(
+      [&topic] {
+        const auto subscriptions = g_node->get_subscriptions_info_by_topic(topic);
+        return subscriptions.size() == 1 &&
+               subscriptions.front().topic_type() == "visualization_msgs/msg/Marker";
+      },
+      std::chrono::seconds(3)));
+}
+
+TEST(InvalidNames, MarkerReportsARejectedTopic)
+{
+  // The marker plugin looks the topic's publishers up before it subscribes, so the name is
+  // rejected there rather than in Subscribe().
+  ErrorCapture<mapviz_plugins::MarkerPlugin> plugin;
+  plugin.SetNode(*g_node);
+
+  EXPECT_NO_THROW(LoadTopic(plugin, "topic", "/test_invalid_names/not a marker topic"));
+
+  EXPECT_TRUE(ReportedInvalid(plugin.errors, "topic name"));
 }
 
 int main(int argc, char ** argv)
