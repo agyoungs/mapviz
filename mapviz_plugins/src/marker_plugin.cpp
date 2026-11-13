@@ -166,44 +166,50 @@ void MarkerPlugin::connectCallback(const std::string & topic, const rmw_qos_prof
       return;
     }
     const std::string & topic_type = message_type_;
-    const std::string held = heldType(nullptr);
-    if (!held.empty() && held != topic_type) {
-      // Fast DDS refuses a subscription whose type differs from one the process already has
-      // on the topic: another display's, or this display's previous one while the spin
-      // thread still holds it. timerEvent() subscribes once that one is gone.
+    if (topic_type != kMarkerType && topic_type != kMarkerArrayType) {
+      PrintError("Unable to subscribe to " + topic_ + ": unsupported type " + topic_type);
+      return;
+    }
+    // Fast DDS refuses a subscription whose type differs from one the process already has
+    // on the topic: another display's, or this display's previous one, which the middleware
+    // may let go of only after it is destroyed. timerEvent() retries once it is gone.
+    std::string held = otherHeldType(topic_type, false);
+    if (held.empty()) {
+      try {
+        if (topic_type == kMarkerType) {
+          // Subscribe() delivers each message to handleMarker() on the GUI
+          // thread, where plugin state may be touched without locking.
+          Subscribe<visualization_msgs::msg::Marker>(
+            topic_, qos, marker_sub_,
+            [this](visualization_msgs::msg::Marker::ConstSharedPtr marker) {
+              handleMarker(marker);
+            });
+          holdSubscription(marker_sub_, topic_type);
+        } else {
+          Subscribe<visualization_msgs::msg::MarkerArray>(
+            topic_, qos, marker_array_sub_,
+            [this](visualization_msgs::msg::MarkerArray::ConstSharedPtr markers) {
+              handleMarkerArray(markers);
+            });
+          holdSubscription(marker_array_sub_, topic_type);
+        }
+      } catch (const std::exception & e) {
+        held = otherHeldType(topic_type, true);
+        if (held.empty()) {
+          // E.g. a QoS setting rcl rejects, or another plugin subscribed with the other type.
+          PrintError(
+            "Unable to subscribe to " + topic_ + " as " + topic_type + ": " + e.what());
+          return;
+        }
+      }
+    }
+    if (!held.empty()) {
       resubscribe_ = true;
       PrintWarning(
         "Waiting to subscribe to " + topic_ + " as " + topic_type +
         " until mapviz stops subscribing to it as " + held + ".");
       return;
     }
-    try {
-      if (topic_type == kMarkerType) {
-        // Subscribe() delivers each message to handleMarker() on the GUI
-        // thread, where plugin state may be touched without locking.
-        Subscribe<visualization_msgs::msg::Marker>(
-          topic_, qos, marker_sub_,
-          [this](visualization_msgs::msg::Marker::ConstSharedPtr marker) {
-            handleMarker(marker);
-          });
-        holdSubscription(marker_sub_, topic_type);
-      } else if (topic_type == kMarkerArrayType) {
-        Subscribe<visualization_msgs::msg::MarkerArray>(
-          topic_, qos, marker_array_sub_,
-          [this](visualization_msgs::msg::MarkerArray::ConstSharedPtr markers) {
-            handleMarkerArray(markers);
-          });
-        holdSubscription(marker_array_sub_, topic_type);
-      } else {
-        PrintError("Unable to subscribe to " + topic_ + ": unsupported type " + topic_type);
-        return;
-      }
-    } catch (const std::exception & e) {
-      // E.g. a QoS setting rcl rejects, or another plugin subscribed with the other type.
-      PrintError("Unable to subscribe to " + topic_ + " as " + topic_type + ": " + e.what());
-      return;
-    }
-
     RCLCPP_INFO(Logger(), "Subscribing to %s (%s)", topic_.c_str(), topic_type.c_str());
     if (has_message_) {
       PrintInfo("OK");  // replaces an earlier error
@@ -215,12 +221,11 @@ void MarkerPlugin::connectCallback(const std::string & topic, const rmw_qos_prof
 
 namespace
 {
-// The marker subscriptions this process holds, by topic. Held weakly: a subscription
-// counts until it is destroyed, which may be after its display resets it, while the spin
-// thread still holds it. Only used on the GUI thread.
+// The marker subscriptions this process holds, by resolved topic name. Held weakly: a
+// destroyed one stays listed as released until a display next subscribes to the topic, as
+// the middleware may not have let go of it yet. Only used on the GUI thread.
 struct HeldSubscription
 {
-  const MarkerPlugin * display;
   std::string type;
   std::weak_ptr<rclcpp::SubscriptionBase> subscription;
 };
@@ -234,32 +239,36 @@ std::multimap<std::string, HeldSubscription> & heldSubscriptions()
 void MarkerPlugin::holdSubscription(
   const rclcpp::SubscriptionBase::SharedPtr & subscription, const std::string & type)
 {
-  if (subscription) {
-    heldSubscriptions().emplace(topic_, HeldSubscription{this, type, subscription});
+  if (!subscription) {
+    return;
   }
+  // Subscribed, so the middleware has let go of the topic's released subscriptions.
+  auto & held = heldSubscriptions();
+  const std::string topic = subscription->get_topic_name();
+  auto [it, end] = held.equal_range(topic);
+  while (it != end) {
+    it = it->second.subscription.expired() ? held.erase(it) : std::next(it);
+  }
+  held.emplace(topic, HeldSubscription{type, subscription});
 }
 
-std::string MarkerPlugin::heldType(const MarkerPlugin * excluded) const
+std::string MarkerPlugin::otherHeldType(const std::string & type, bool released)
 {
-  // All of them have the same type, as connectCallback() subscribes with no other.
-  auto & held = heldSubscriptions();
-  auto [it, end] = held.equal_range(topic_);
-  std::string type;
-  while (it != end) {
-    if (it->second.subscription.expired()) {
-      it = held.erase(it);
-      continue;
+  // A type other than @p type that marker subscriptions hold on the topic, counting
+  // released ones if @p released; empty if none.
+  const std::string topic =
+    NodeUnsafe()->get_node_topics_interface()->resolve_topic_name(topic_);
+  auto [it, end] = heldSubscriptions().equal_range(topic);
+  for (; it != end; ++it) {
+    if (it->second.type != type && (released || !it->second.subscription.expired())) {
+      return it->second.type;
     }
-    if (it->second.display != excluded) {
-      type = it->second.type;
-    }
-    ++it;
   }
-  return type;
+  return "";
 }
 
 std::string MarkerPlugin::advertisedType(
-  const std::vector<rclcpp::TopicEndpointInfo> & publishers) const
+  const std::vector<rclcpp::TopicEndpointInfo> & publishers)
 {
   // The Marker or MarkerArray type the topic is published with; empty if nothing publishes
   // it as either. Only publishers count: the topic list also carries the types of
@@ -272,9 +281,9 @@ std::string MarkerPlugin::advertisedType(
     marker_array = marker_array || publisher.topic_type() == kMarkerArrayType;
   }
   if (marker && marker_array) {
-    // Published as both: the type other displays already subscribe with, which Fast DDS
-    // requires, else the current one.
-    const std::string held = heldType(this);
+    // Published as both: the type mapviz already subscribes with, which Fast DDS requires,
+    // else the current one.
+    const std::string held = otherHeldType("", false);
     if (!held.empty()) {
       return held;
     }
@@ -914,10 +923,9 @@ void MarkerPlugin::timerEvent([[maybe_unused]] QTimerEvent * event)
   }
   const std::string advertised = advertisedType(publishers);
   if (resubscribe_) {
-    // Waiting for a subscription with the other type to go: retry once it has, or once the
-    // type it holds is the one to subscribe with.
-    const std::string held = heldType(nullptr);
-    if (held.empty() || held == (advertised.empty() ? message_type_ : advertised)) {
+    // Waiting for a subscription with the other type to go: retry once it has, or once
+    // the type to subscribe with is the one held.
+    if (otherHeldType(advertised.empty() ? message_type_ : advertised, false).empty()) {
       connectCallback(topic_, qos_);
     }
     return;

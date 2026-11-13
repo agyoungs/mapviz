@@ -975,7 +975,8 @@ TEST(MarkerType, DoesNotRetryAnInvalidQosReliability)
 TEST(MarkerType, WaitsForAnotherDisplayToReleaseTheTopic)
 {
   // No publisher, so neither display has a reason to switch type: the second waits rather
-  // than ask the middleware for a second type on the topic (which Fast DDS refuses).
+  // than ask the middleware for a second type on the topic (which Fast DDS refuses). It
+  // names the topic relative to the node's namespace, but it is the same topic.
   const std::string topic = "/test_marker_type/held_by_another";
   MarkerStatus first;
   first.SetNode(*g_node);
@@ -985,7 +986,8 @@ TEST(MarkerType, WaitsForAnotherDisplayToReleaseTheTopic)
   second.SetNode(*g_node);
   EXPECT_NO_THROW(
     second.LoadConfigPlugin(
-      YAML::Load("topic: " + topic + "\nmessage_type: visualization_msgs/msg/MarkerArray\n"),
+      YAML::Load(
+        "topic: " + topic.substr(1) + "\nmessage_type: visualization_msgs/msg/MarkerArray\n"),
       ""));
   EXPECT_EQ(0u, second.status.rfind("warning: Waiting to subscribe", 0)) << second.status;
   EXPECT_EQ(0, second.errors);
@@ -1001,6 +1003,20 @@ TEST(MarkerType, WaitsForAnotherDisplayToReleaseTheTopic)
       std::chrono::seconds(3)));
   EXPECT_EQ("warning: No messages received.", second.status);
   EXPECT_EQ(0, second.errors);
+}
+
+TEST(MarkerType, ReportsAnUnsupportedSavedTypeWhileAnotherDisplayHoldsTheTopic)
+{
+  const std::string topic = "/test_marker_type/held_unsupported";
+  mapviz_plugins::MarkerPlugin first;
+  first.SetNode(*g_node);
+  first.LoadConfigPlugin(
+    YAML::Load("topic: " + topic + "\nmessage_type: visualization_msgs/msg/Marker\n"), "");
+  MarkerStatus second;
+  second.SetNode(*g_node);
+  second.LoadConfigPlugin(
+    YAML::Load("topic: " + topic + "\nmessage_type: std_msgs/msg/String\n"), "");
+  EXPECT_EQ(0u, second.status.rfind("error: Unable to subscribe", 0)) << second.status;
 }
 
 TEST(MarkerType, ClearsTheUnsupportedTypeErrorWhenThePublisherGoes)
