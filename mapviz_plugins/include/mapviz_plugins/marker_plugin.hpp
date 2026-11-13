@@ -197,7 +197,8 @@ private:
   void connectCallback(const std::string & topic, const rmw_qos_profile_t & qos);
   void holdSubscription(
     const rclcpp::SubscriptionBase::SharedPtr & subscription, const std::string & type);
-  std::string otherHeldType(const std::string & type, bool released);
+  void dropReleased(const std::string & topic);
+  std::string otherHeldType(const std::string & type, bool released, bool others_only = false);
   std::string advertisedType(const std::vector<rclcpp::TopicEndpointInfo> & publishers);
   void reportNoType(const std::vector<rclcpp::TopicEndpointInfo> & publishers);
   void transformArrow(

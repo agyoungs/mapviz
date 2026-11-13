@@ -194,7 +194,9 @@ void MarkerPlugin::connectCallback(const std::string & topic, const rmw_qos_prof
           holdSubscription(marker_array_sub_, topic_type);
         }
       } catch (const std::exception & e) {
+        // A released subscription of the other type may still hold the topic: retry once.
         held = otherHeldType(topic_type, true);
+        dropReleased(NodeUnsafe()->get_node_topics_interface()->resolve_topic_name(topic_));
         if (held.empty()) {
           // E.g. a QoS setting rcl rejects, or another plugin subscribed with the other type.
           PrintError(
@@ -226,6 +228,7 @@ namespace
 // the middleware may not have let go of it yet. Only used on the GUI thread.
 struct HeldSubscription
 {
+  const MarkerPlugin * display;
   std::string type;
   std::weak_ptr<rclcpp::SubscriptionBase> subscription;
 };
@@ -243,24 +246,32 @@ void MarkerPlugin::holdSubscription(
     return;
   }
   // Subscribed, so the middleware has let go of the topic's released subscriptions.
-  auto & held = heldSubscriptions();
   const std::string topic = subscription->get_topic_name();
+  dropReleased(topic);
+  heldSubscriptions().emplace(topic, HeldSubscription{this, type, subscription});
+}
+
+void MarkerPlugin::dropReleased(const std::string & topic)
+{
+  auto & held = heldSubscriptions();
   auto [it, end] = held.equal_range(topic);
   while (it != end) {
     it = it->second.subscription.expired() ? held.erase(it) : std::next(it);
   }
-  held.emplace(topic, HeldSubscription{type, subscription});
 }
 
-std::string MarkerPlugin::otherHeldType(const std::string & type, bool released)
+std::string MarkerPlugin::otherHeldType(
+  const std::string & type, bool released, bool others_only)
 {
   // A type other than @p type that marker subscriptions hold on the topic, counting
-  // released ones if @p released; empty if none.
+  // released ones if @p released, and only other displays' if @p others_only; empty if none.
   const std::string topic =
     NodeUnsafe()->get_node_topics_interface()->resolve_topic_name(topic_);
   auto [it, end] = heldSubscriptions().equal_range(topic);
   for (; it != end; ++it) {
-    if (it->second.type != type && (released || !it->second.subscription.expired())) {
+    if (it->second.type != type && (released || !it->second.subscription.expired()) &&
+      !(others_only && it->second.display == this))
+    {
       return it->second.type;
     }
   }
@@ -281,9 +292,10 @@ std::string MarkerPlugin::advertisedType(
     marker_array = marker_array || publisher.topic_type() == kMarkerArrayType;
   }
   if (marker && marker_array) {
-    // Published as both: the type mapviz already subscribes with, which Fast DDS requires,
-    // else the current one.
-    const std::string held = otherHeldType("", false);
+    // Published as both: the type other displays already subscribe with, which Fast DDS
+    // requires, else the current one. Not this display's own previous one, which it may be
+    // switching from.
+    const std::string held = otherHeldType("", false, true);
     if (!held.empty()) {
       return held;
     }
@@ -915,6 +927,10 @@ void MarkerPlugin::timerEvent([[maybe_unused]] QTimerEvent * event)
   if (matched || topic_.empty()) {
     return;
   }
+  if (resubscribe_) {
+    connectCallback(topic_, qos_);  // waits again while the other type is still held
+    return;
+  }
   std::vector<rclcpp::TopicEndpointInfo> publishers;
   try {
     publishers = NodeUnsafe()->get_publishers_info_by_topic(topic_);
@@ -922,14 +938,6 @@ void MarkerPlugin::timerEvent([[maybe_unused]] QTimerEvent * event)
     return;  // an invalid name; connectCallback() reported it
   }
   const std::string advertised = advertisedType(publishers);
-  if (resubscribe_) {
-    // Waiting for a subscription with the other type to go: retry once it has, or once
-    // the type to subscribe with is the one held.
-    if (otherHeldType(advertised.empty() ? message_type_ : advertised, false).empty()) {
-      connectCallback(topic_, qos_);
-    }
-    return;
-  }
   if (advertised.empty()) {
     if (message_type_.empty()) {
       reportNoType(publishers);

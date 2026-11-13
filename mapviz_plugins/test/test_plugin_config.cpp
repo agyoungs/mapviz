@@ -972,6 +972,28 @@ TEST(MarkerType, DoesNotRetryAnInvalidQosReliability)
   ExpectInvalidQosReportedOnce("qos_reliability: 9");  // rejected by rcl
 }
 
+TEST(MarkerType, ReportsAnInvalidQosOnATopicAnotherDisplayLeft)
+{
+  // The other display's released subscription buys one retry, then the error is shown.
+  const std::string topic = "/test_marker_type/left_behind";
+  {
+    mapviz_plugins::MarkerPlugin first;
+    first.SetNode(*g_node);
+    first.LoadConfigPlugin(
+      YAML::Load("topic: " + topic + "\nmessage_type: visualization_msgs/msg/Marker\n"), "");
+  }
+  MarkerStatus second;
+  second.SetNode(*g_node);
+  second.LoadConfigPlugin(
+    YAML::Load(
+      "topic: " + topic + "\nmessage_type: visualization_msgs/msg/MarkerArray\n"
+      "qos_reliability: 9\n"), "");
+
+  EXPECT_TRUE(ProcessEventsFor(std::chrono::milliseconds(2500)));
+  EXPECT_EQ(0u, second.status.rfind("error: Unable to subscribe", 0)) << second.status;
+  EXPECT_EQ(1, second.errors);
+}
+
 TEST(MarkerType, WaitsForAnotherDisplayToReleaseTheTopic)
 {
   // No publisher, so neither display has a reason to switch type: the second waits rather
