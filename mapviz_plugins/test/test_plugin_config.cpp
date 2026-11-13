@@ -692,6 +692,65 @@ TEST_F(MeasuringPluginTest, ShowsNothingForASinglePoint)
   EXPECT_EQ("", LastSegmentText(plugin));
 }
 
+/// Records the marker plugin's status line.
+class MarkerStatus : public mapviz_plugins::MarkerPlugin
+{
+public:
+  void PrintError(const std::string & message) override
+  {
+    status = "error: " + message;
+    ++errors;
+    MarkerPlugin::PrintError(message);
+  }
+  void PrintWarning(const std::string & message) override
+  {
+    status = "warning: " + message;
+    MarkerPlugin::PrintWarning(message);
+  }
+  void PrintInfo(const std::string & message) override
+  {
+    status = "info: " + message;
+    MarkerPlugin::PrintInfo(message);
+  }
+
+  std::string status;
+  int errors = 0;
+};
+
+/// Runs the Qt event loop, and so the plugins' 1 s timers, until @p done or @p timeout.
+::testing::AssertionResult ProcessEventsUntil(
+  const std::function<bool()> & done, std::chrono::milliseconds timeout)
+{
+  const auto deadline = std::chrono::steady_clock::now() + timeout;
+  while (!done()) {
+    if (std::chrono::steady_clock::now() > deadline) {
+      return ::testing::AssertionFailure() << "timed out";
+    }
+    try {
+      QCoreApplication::processEvents();
+    } catch (const std::exception & e) {
+      return ::testing::AssertionFailure() << "an event handler threw: " << e.what();
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  return ::testing::AssertionSuccess();
+}
+
+/// Runs the Qt event loop for @p duration; fails if an event handler throws.
+::testing::AssertionResult ProcessEventsFor(std::chrono::milliseconds duration)
+{
+  const auto end = std::chrono::steady_clock::now() + duration;
+  while (std::chrono::steady_clock::now() < end) {
+    try {
+      QCoreApplication::processEvents();
+    } catch (const std::exception & e) {
+      return ::testing::AssertionFailure() << "an event handler threw: " << e.what();
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  return ::testing::AssertionSuccess();
+}
+
 /// Loads a marker display saved with @p saved_type while its topic is published
 /// as PublishedT, and waits for the display to switch to the published type.
 template<typename PublishedT>
@@ -755,9 +814,8 @@ TEST(MarkerType, CorrectsASavedMarkerArrayTypeToMarker)
 
 TEST(MarkerType, SwitchesTwoDisplaysOnOneTopic)
 {
-  // Two displays saved as Marker on a topic now published as MarkerArray. Fast DDS refuses
-  // the first display's MarkerArray subscription while the second still subscribes as
-  // Marker; the first retries once the second has switched too.
+  // Two displays saved as Marker on a topic now published as MarkerArray. The first to
+  // switch waits while the other still subscribes as Marker, then follows it.
   const std::string topic = "/test_marker_type/two_displays";
   auto context = std::make_shared<rclcpp::Context>();
   context->init(0, nullptr);
@@ -767,10 +825,10 @@ TEST(MarkerType, SwitchesTwoDisplaysOnOneTopic)
   YAML::Node config;
   config["topic"] = topic;
   config["message_type"] = "visualization_msgs/msg/Marker";
-  mapviz_plugins::MarkerPlugin first;
+  MarkerStatus first;
   first.SetNode(*g_node);
   first.LoadConfigPlugin(config, "");
-  mapviz_plugins::MarkerPlugin second;
+  MarkerStatus second;
   second.SetNode(*g_node);
   second.LoadConfigPlugin(config, "");
   ASSERT_TRUE(HasSubscribers(topic));
@@ -786,6 +844,9 @@ TEST(MarkerType, SwitchesTwoDisplaysOnOneTopic)
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
   EXPECT_EQ(2u, publisher->get_subscription_count());
+  // The wait's warning is replaced once subscribed.
+  EXPECT_EQ("warning: No messages received.", first.status);
+  EXPECT_EQ("warning: No messages received.", second.status);
 
   publisher.reset();
   publisher_node.reset();
@@ -850,65 +911,6 @@ TEST(MarkerType, ReportsAnUnsupportedPublishedType)
   EXPECT_EQ(0u, g_node->count_subscribers(topic));
 }
 
-/// Records the marker plugin's status line.
-class MarkerStatus : public mapviz_plugins::MarkerPlugin
-{
-public:
-  void PrintError(const std::string & message) override
-  {
-    status = "error: " + message;
-    ++errors;
-    MarkerPlugin::PrintError(message);
-  }
-  void PrintWarning(const std::string & message) override
-  {
-    status = "warning: " + message;
-    MarkerPlugin::PrintWarning(message);
-  }
-  void PrintInfo(const std::string & message) override
-  {
-    status = "info: " + message;
-    MarkerPlugin::PrintInfo(message);
-  }
-
-  std::string status;
-  int errors = 0;
-};
-
-/// Runs the Qt event loop, and so the plugins' 1 s timers, until @p done or @p timeout.
-::testing::AssertionResult ProcessEventsUntil(
-  const std::function<bool()> & done, std::chrono::milliseconds timeout)
-{
-  const auto deadline = std::chrono::steady_clock::now() + timeout;
-  while (!done()) {
-    if (std::chrono::steady_clock::now() > deadline) {
-      return ::testing::AssertionFailure() << "timed out";
-    }
-    try {
-      QCoreApplication::processEvents();
-    } catch (const std::exception & e) {
-      return ::testing::AssertionFailure() << "an event handler threw: " << e.what();
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  }
-  return ::testing::AssertionSuccess();
-}
-
-/// Runs the Qt event loop for @p duration; fails if an event handler throws.
-::testing::AssertionResult ProcessEventsFor(std::chrono::milliseconds duration)
-{
-  const auto end = std::chrono::steady_clock::now() + duration;
-  while (std::chrono::steady_clock::now() < end) {
-    try {
-      QCoreApplication::processEvents();
-    } catch (const std::exception & e) {
-      return ::testing::AssertionFailure() << "an event handler threw: " << e.what();
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  }
-  return ::testing::AssertionSuccess();
-}
-
 TEST(MarkerType, ReportsATopicWithAnUnknownSubstitution)
 {
   // Name validation accepts "{...}", but expanding an unknown substitution throws.
@@ -944,7 +946,8 @@ TEST(MarkerType, ClearsTheUnsupportedTypeErrorOnceAMarkerIsPublished)
       std::chrono::seconds(3))) << plugin.status;
 }
 
-TEST(MarkerType, DoesNotRetryAnInvalidQos)
+/// Loads a marker display with an invalid QoS @p setting; expects it reported once.
+void ExpectInvalidQosReportedOnce(const std::string & setting)
 {
   MarkerStatus plugin;
   plugin.SetNode(*g_node);
@@ -952,18 +955,87 @@ TEST(MarkerType, DoesNotRetryAnInvalidQos)
     plugin.LoadConfigPlugin(
       YAML::Load(
         "topic: /test_marker_type/invalid_qos\n"
-        "message_type: visualization_msgs/msg/Marker\n"
-        "qos_history: 9\n"), ""));
+        "message_type: visualization_msgs/msg/Marker\n" + setting + "\n"), ""));
   EXPECT_EQ(0u, plugin.status.rfind("error: Unable to subscribe", 0)) << plugin.status;
 
   EXPECT_TRUE(ProcessEventsFor(std::chrono::milliseconds(1500)));
-  EXPECT_EQ(1, plugin.errors);
+  EXPECT_EQ(1, plugin.errors) << plugin.status;
+}
+
+TEST(MarkerType, DoesNotRetryAnInvalidQosHistory)
+{
+  ExpectInvalidQosReportedOnce("qos_history: 9");  // rejected by rclcpp
+}
+
+TEST(MarkerType, DoesNotRetryAnInvalidQosReliability)
+{
+  ExpectInvalidQosReportedOnce("qos_reliability: 9");  // rejected by rcl
+}
+
+TEST(MarkerType, WaitsForAnotherDisplayToReleaseTheTopic)
+{
+  // No publisher, so neither display has a reason to switch type: the second waits rather
+  // than ask the middleware for a second type on the topic (which Fast DDS refuses).
+  const std::string topic = "/test_marker_type/held_by_another";
+  MarkerStatus first;
+  first.SetNode(*g_node);
+  first.LoadConfigPlugin(
+    YAML::Load("topic: " + topic + "\nmessage_type: visualization_msgs/msg/Marker\n"), "");
+  MarkerStatus second;
+  second.SetNode(*g_node);
+  EXPECT_NO_THROW(
+    second.LoadConfigPlugin(
+      YAML::Load("topic: " + topic + "\nmessage_type: visualization_msgs/msg/MarkerArray\n"),
+      ""));
+  EXPECT_EQ(0u, second.status.rfind("warning: Waiting to subscribe", 0)) << second.status;
+  EXPECT_EQ(0, second.errors);
+
+  first.LoadConfigPlugin(YAML::Load("topic: /test_marker_type/elsewhere\n"), "");
+  EXPECT_TRUE(
+    ProcessEventsUntil(
+      [&topic] {
+        const auto subscriptions = g_node->get_subscriptions_info_by_topic(topic);
+        return subscriptions.size() == 1 &&
+               subscriptions.front().topic_type() == "visualization_msgs/msg/MarkerArray";
+      },
+      std::chrono::seconds(3)));
+  EXPECT_EQ("warning: No messages received.", second.status);
+  EXPECT_EQ(0, second.errors);
+}
+
+TEST(MarkerType, ClearsTheUnsupportedTypeErrorWhenThePublisherGoes)
+{
+  const std::string topic = "/test_marker_type/unsupported_then_gone";
+  auto string_publisher = g_node->create_publisher<std_msgs::msg::String>(topic, 1);
+
+  MarkerStatus plugin;
+  plugin.SetNode(*g_node);
+  LoadTopic(plugin, "topic", topic);
+  ASSERT_TRUE(
+    ProcessEventsUntil(
+      [&plugin] {return plugin.status.find("is published as std_msgs") != std::string::npos;},
+      std::chrono::seconds(3)));
+
+  string_publisher.reset();
+  EXPECT_TRUE(
+    ProcessEventsUntil(
+      [&plugin] {return plugin.status == "warning: No messages received.";},
+      std::chrono::seconds(3))) << plugin.status;
+}
+
+TEST(MarkerType, SavesNoTypeWithoutATopic)
+{
+  mapviz_plugins::MarkerPlugin plugin;
+  plugin.SetNode(*g_node);
+  YAML::Node saved =
+    SaveAfterLoading(plugin, "message_type: visualization_msgs/msg/MarkerArray\n");
+  EXPECT_FALSE(saved["message_type"]);
 }
 
 TEST(MarkerType, JoinsTheTypeAnotherDisplayHoldsWhenBothArePublished)
 {
-  // Fast DDS refuses two types on one topic within a participant, so each publisher gets
-  // a context of its own.
+  // Each publisher gets a context of its own, as Fast DDS refuses two types on one topic
+  // within a participant.
   const std::string topic = "/test_marker_type/both_types";
   auto marker_context = std::make_shared<rclcpp::Context>();
   marker_context->init(0, nullptr);

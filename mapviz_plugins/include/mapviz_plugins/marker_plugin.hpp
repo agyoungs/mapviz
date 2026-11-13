@@ -182,7 +182,8 @@ private:
   // advertised type whenever the topic is advertised as Marker or MarkerArray. Empty: wait
   // until it is.
   std::string message_type_;
-  // The last subscription attempt failed (see connectCallback()); timerEvent() retries it.
+  // Waiting for a subscription with the other type to go (see connectCallback());
+  // timerEvent() subscribes once it has.
   bool resubscribe_{};
 
   rclcpp::Subscription<visualization_msgs::msg::Marker>::SharedPtr marker_sub_;
@@ -194,11 +195,11 @@ private:
 
   void processMarker(const visualization_msgs::msg::Marker & marker);
   void connectCallback(const std::string & topic, const rmw_qos_profile_t & qos);
-  std::string subscribedType();
-  std::string advertisedType(
-    const std::vector<rclcpp::TopicEndpointInfo> & publishers,
-    const std::string & subscribed) const;
-  bool reportUnsupportedType(const std::vector<rclcpp::TopicEndpointInfo> & publishers);
+  void holdSubscription(
+    const rclcpp::SubscriptionBase::SharedPtr & subscription, const std::string & type);
+  std::string heldType(const MarkerPlugin * excluded) const;
+  std::string advertisedType(const std::vector<rclcpp::TopicEndpointInfo> & publishers) const;
+  void reportNoType(const std::vector<rclcpp::TopicEndpointInfo> & publishers);
   void transformArrow(
     MarkerData & markerData,
     const swri_transform_util::Transform & transform);
